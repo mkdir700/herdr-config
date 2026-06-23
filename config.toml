@@ -1,0 +1,14 @@
+[ui]
+agent_panel_scope = "all"
+
+# Root directory for git worktree checkouts created from the sidebar/CLI.
+# Layout: <directory>/<repo>/<branch-slug>
+[worktrees]
+directory = "~/.herdr/worktrees"
+
+# Keybindings (prefix defaults to ctrl+b).
+# These three worktree bindings are unset by default — enabling them here.
+[keys]
+new_worktree = "prefix+shift+g"     # create a new branch + checkout
+open_worktree = "prefix+shift+o"    # list and open existing worktrees
+remove_worktree = "prefix+alt+d"    # delete a worktree checkout
