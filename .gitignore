@@ -8,7 +8,9 @@
 session.json
 plugins.json
 
-# Herdr-managed plugin runtime copies & per-plugin config/state
+# Herdr-managed plugin downloads (each has its own .git + build artifacts),
+# runtime copies & per-plugin config/state. Reinstall via `herdr plugin install`.
+plugins/github/
 plugins/config/
 
 # OS noise

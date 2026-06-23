@@ -84,18 +84,40 @@ herdr plugin log list --plugin superset-bootstrap
   `herdr worktree remove --workspace <id> --force`.
 - Requires `jq`. Built for Herdr **0.7.0+**.
 
+## Installed marketplace plugins
+
+These are installed from GitHub (not tracked in this repo — `herdr plugin
+install` downloads them into the ignored `plugins/github/`). Reinstall on a new
+machine with the commands below.
+
+| Plugin | What it does | Deps |
+| ------ | ------------ | ---- |
+| [`wyattjoh/herdr-plugin-gh-pr`](https://github.com/wyattjoh/herdr-plugin-gh-pr) | Shows the focused worktree branch's GitHub PR status in the sidebar | `bun`, `gh` |
+| [`smarzban/herdr-file-viewer`](https://github.com/smarzban/herdr-file-viewer) | Git-aware read-only file viewer TUI (tree + diff/markdown/syntax in a split pane) | `cargo` (builds on install) |
+| [`paulbkim-dev/vim-herdr-navigation`](https://github.com/paulbkim-dev/vim-herdr-navigation) | Seamless `Ctrl+h/j/k/l` navigation across Herdr panes and Vim/Neovim splits | `bash` |
+| [`ogulcancelik/herdr-plugin-github-start`](https://github.com/ogulcancelik/herdr-plugin-github-start) | Start Claude/Codex from a GitHub issue, PR, or discussion | `node` |
+
+```bash
+herdr plugin install wyattjoh/herdr-plugin-gh-pr --yes
+herdr plugin install smarzban/herdr-file-viewer --yes
+herdr plugin install paulbkim-dev/vim-herdr-navigation --yes
+herdr plugin install ogulcancelik/herdr-plugin-github-start --yes
+```
+
 ## Setup on a new machine
 
 ```bash
 git clone https://github.com/mkdir700/herdr-config ~/.config/herdr
 cd ~/.config/herdr
-herdr plugin link plugins/superset-bootstrap
+herdr plugin link plugins/superset-bootstrap   # local plugin
+# then reinstall the marketplace plugins listed above
 ```
 
-That re-enables the plugin (the `plugins.json` registry is machine-specific and
-not tracked, so `plugin link` rebuilds it).
+`plugin link` re-enables the local plugin (the `plugins.json` registry is
+machine-specific and not tracked, so it is rebuilt).
 
 ## What's ignored
 
-`*.sock`, `*.log`, `session.json`, `plugins.json`, and `plugins/config/` — all
-Herdr-managed runtime state, regenerated automatically.
+`*.sock`, `*.log`, `session.json`, `plugins.json`, `plugins/config/`, and
+`plugins/github/` — all Herdr-managed runtime state and plugin downloads,
+regenerated automatically.
