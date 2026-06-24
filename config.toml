@@ -1,17 +1,19 @@
+onboarding = false
 [ui]
 agent_panel_scope = "all"
 
 # Root directory for git worktree checkouts created from the sidebar/CLI.
 # Layout: <directory>/<repo>/<branch-slug>
+show_agent_labels_on_pane_borders = true
 [worktrees]
 directory = "~/.herdr/worktrees"
 
 # Keybindings (prefix defaults to ctrl+b).
 # These three worktree bindings are unset by default — enabling them here.
 [keys]
-new_worktree = "prefix+shift+g"     # create a new branch + checkout
-open_worktree = "prefix+shift+o"    # list and open existing worktrees
-remove_worktree = "prefix+alt+d"    # delete a worktree checkout
+new_worktree = "prefix+shift+g"  # create a new branch + checkout
+open_worktree = "prefix+shift+o" # list and open existing worktrees
+remove_worktree = "prefix+alt+d" # delete a worktree checkout
 
 # vim-herdr-navigation: Ctrl+h/j/k/l move across Vim splits AND herdr panes.
 # Direct chords (no prefix). Shadows readline Ctrl+l/Ctrl+k in non-Vim panes.
@@ -38,3 +40,40 @@ key = "ctrl+l"
 type = "plugin_action"
 command = "vim-herdr-navigation.right"
 description = "navigate right (vim/herdr)"
+
+[[keys.command]] # open in a split beside your work
+key = "prefix+f"
+type = "shell"
+command = "herdr plugin action invoke open-file-viewer --plugin herdr-file-viewer"
+
+[[keys.command]] # …or in its own tab
+key = "prefix+shift+f"
+type = "shell"
+command = "herdr plugin action invoke open-file-viewer-tab --plugin herdr-file-viewer"
+
+# nvim-diffview: review git diffs via Neovim's diffview.nvim. u = uncommitted
+# (working tree + index vs HEAD), a = whole branch against its base (base...HEAD).
+# base key = split, +shift = own tab. Idempotent: press again to focus, once more
+# to close. These four are conflict-free with herdr's default keybindings.
+[[keys.command]] # uncommitted changes, split
+key = "prefix+u"
+type = "shell"
+command = "herdr plugin action invoke working-split --plugin nvim-diffview"
+
+[[keys.command]] # uncommitted changes, own tab
+key = "prefix+shift+u"
+type = "shell"
+command = "herdr plugin action invoke working-tab --plugin nvim-diffview"
+
+[[keys.command]] # branch vs base, split
+key = "prefix+a"
+type = "shell"
+command = "herdr plugin action invoke branch-split --plugin nvim-diffview"
+
+[[keys.command]] # branch vs base, own tab
+key = "prefix+shift+a"
+type = "shell"
+command = "herdr plugin action invoke branch-tab --plugin nvim-diffview"
+
+[theme]
+name = "vesper"

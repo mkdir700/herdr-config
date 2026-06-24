@@ -1,0 +1,65 @@
+# herdr-plugin.toml — manifest for the nvim-diffview plugin.
+#
+# Opens Neovim's diffview.nvim in a herdr split or tab to review either the
+# uncommitted working-tree changes (vs HEAD) or the whole branch (vs its base).
+# It is summoned ONLY by explicit actions/keybindings — no event hooks, nothing
+# automatic. Neovim runs with the user's full config (diffview.nvim is loaded
+# there), and the viewer is transient: closing the diffview view quits Neovim so
+# the split/tab disappears.
+
+id = "nvim-diffview"
+name = "Neovim Diffview"
+version = "0.1.0"
+description = "Review git diffs in a herdr split/tab via Neovim's diffview.nvim — working tree vs HEAD, or branch vs its base."
+min_herdr_version = "0.7.0"
+platforms = ["linux", "macos"]
+
+# Two pane entrypoints, one per comparison. The title is the pane's label in
+# `herdr pane list`, and the launcher keys idempotent toggling off it — so the
+# "working" and "branch" diffs have distinct identities and can coexist.
+#
+# The pane command is a path relative to the plugin root (the new pane's default
+# cwd), so the launcher passes the repo to diff via `--env HERDR_DIFF_REPO`
+# rather than `--cwd` (which would change where this relative path resolves).
+# The actual split-vs-tab placement is chosen at open time by the launcher's
+# `--placement` flag; the value here is just a default.
+
+[[panes]]
+id = "diff-working"
+title = "Diff: working"
+placement = "split"
+command = ["bash", "scripts/nvim-diff.sh", "working"]
+
+[[panes]]
+id = "diff-branch"
+title = "Diff: branch"
+placement = "split"
+command = ["bash", "scripts/nvim-diff.sh", "branch"]
+
+# Four actions: {working, branch} × {split, tab}. Each shells to the shared
+# idempotent launcher with the comparison and placement. Bind these to keys in
+# ~/.config/herdr/config.toml (suggested binds are in the plugin README).
+
+[[actions]]
+id = "working-split"
+title = "Diff working tree (split)"
+description = "Review uncommitted changes (working tree + index vs HEAD) in a split."
+command = ["bash", "scripts/launch.sh", "working", "split"]
+
+[[actions]]
+id = "working-tab"
+title = "Diff working tree (tab)"
+description = "Review uncommitted changes (working tree + index vs HEAD) in its own tab."
+command = ["bash", "scripts/launch.sh", "working", "tab"]
+
+[[actions]]
+id = "branch-split"
+title = "Diff branch vs base (split)"
+description = "Review the whole branch (base...HEAD) in a split. Base is auto-detected; override with $HERDR_DIFFVIEW_BASE."
+command = ["bash", "scripts/launch.sh", "branch", "split"]
+
+[[actions]]
+id = "branch-tab"
+title = "Diff branch vs base (tab)"
+description = "Review the whole branch (base...HEAD) in its own tab. Base is auto-detected; override with $HERDR_DIFFVIEW_BASE."
+command = ["bash", "scripts/launch.sh", "branch", "tab"]
