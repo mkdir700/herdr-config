@@ -47,7 +47,7 @@ focus_pane_right    = "prefix+l"
 # LazyVim: <leader>- split below, <leader>| split right.
 # If the two feel swapped on your setup, swap these two values.
 split_horizontal    = "prefix+minus"         # <leader>- split below (stacked)
-split_vertical      = "prefix+|"             # <leader>| split right (side by side)
+split_vertical      = "prefix+plus"          # <leader>+ split right (side by side)
 close_pane          = "prefix+x"             # delete window
 zoom                = "prefix+m"             # <leader>wm maximize/restore toggle (m = maximize)
 resize_mode         = "prefix+r"

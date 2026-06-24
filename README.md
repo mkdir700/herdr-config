@@ -59,7 +59,7 @@ LazyVim's `<C-hjkl>`.
 | ----- | -------------------- | ------ | -------------- |
 | Pane  | `h` / `j` / `k` / `l` | focus left/down/up/right | `<C-hjkl>` |
 | Pane  | `-`                   | split below (stacked)    | `<leader>-` |
-| Pane  | `\|`                  | split right (side by side) | `<leader>\|` |
+| Pane  | `+`                   | split right (side by side) | `<leader>+` |
 | Pane  | `x` / `z` / `r`       | close / maximize / resize mode | `<leader>wd` / `wm` |
 | Pane  | `Tab` / `Shift+Tab`   | cycle next / previous panes | — |
 | Pane  | `Shift+p`             | rename pane | — |
@@ -77,7 +77,7 @@ Notes:
 
 - `copy_mode` is moved off its hidden default (`prefix+[`) to `prefix+c`, freeing
   `[` / `]` for LazyVim-style tab navigation.
-- **Split direction** follows Vim's convention (`-` stacks, `|` is side by side).
+- **Split direction** follows Vim's convention (`-` stacks, `+` is side by side).
   If it feels swapped on your terminal, swap the `split_horizontal` /
   `split_vertical` values in `config.toml`.
 - **Workspace `{` / `}`** mirror the tab `[` / `]` bindings — outer brackets for
