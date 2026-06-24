@@ -104,6 +104,12 @@ herdr plugin install paulbkim-dev/vim-herdr-navigation --yes
 herdr plugin install ogulcancelik/herdr-plugin-github-start --yes
 ```
 
+> **`vim-herdr-navigation` needs two more steps** beyond `plugin install`:
+> 1. The `[[keys.command]]` bindings for `Ctrl+h/j/k/l` in `config.toml` — already
+>    tracked in this repo.
+> 2. The Neovim side, copied to `~/.config/nvim/after/plugin/herdr_nav.lua` from
+>    the plugin's `editor/nvim.lua`. This lives in the Neovim config, not this repo.
+
 ## Setup on a new machine
 
 ```bash
