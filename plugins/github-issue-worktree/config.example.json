@@ -1,0 +1,15 @@
+{
+  "defaultAgent": "claude",
+  "agents": {
+    "claude": { "command": "claude" },
+    "codex": { "command": "codex" }
+  },
+  "baseRef": "",
+  "namingModel": "",
+  "promptTemplate": "Work on this GitHub issue: {url}\n\nTitle: {title}\n\nRead the issue with `gh issue view {number}`, then propose a short plan before changing code.",
+  "timing": {
+    "afterAgentStartMs": 1500,
+    "afterPromptMs": 600,
+    "afterOverlayCloseFocusMs": 400
+  }
+}

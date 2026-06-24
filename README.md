@@ -21,6 +21,11 @@ plugins/tuicr-diff/                 # Local plugin: review git diffs via tuicr (
 plugins/copy-workspace-path/        # Local plugin: "Copy path" (prefix+y) — copy focused workspace/tab/pane cwd
   herdr-plugin.toml
   scripts/copy-path.sh              #   resolve the focused item's cwd, copy to clipboard
+plugins/github-issue-worktree/      # Local plugin: issue → worktree (prefix+shift+i), names drafted by claude
+  herdr-plugin.toml
+  config.example.json               #   default agent, base ref, prompt template
+  scripts/open.js                   #   action entrypoint: open the overlay prompt
+  scripts/prompt.js                 #   read issue, draft names, create worktree, launch agent
 ```
 
 ## config.toml
@@ -234,6 +239,66 @@ fires a best-effort top-right toast (visible only when `ui.toast.delivery =
 "herdr"`); the copy itself works regardless.
 
 Requires `jq` on `PATH`. Menu-only — no keybinding. Built for Herdr **0.7.0+**.
+
+## Plugin: github-issue-worktree
+
+A local Herdr plugin that starts work **from a GitHub issue** — but instead of
+just naming a tab after the issue number (what the marketplace `github-start`
+plugin does), it reads the issue's **content** and uses it to name a real **git
+worktree + branch**, then launches an agent inside that checkout.
+
+### Why not `github-start`
+
+`github-start` creates a *tab* with a mechanical `gh-issue-614` label, never
+reads the issue body, and never touches git worktrees. This plugin reads the
+issue, drafts meaningful names from it, and creates an isolated worktree — so
+each issue gets its own branch and checkout, ready for parallel agent work.
+
+### Flow (`prefix+shift+i`)
+
+1. Paste an issue URL / `#614` / `issue 614` in the overlay, pick an agent.
+2. `gh issue view` pulls the title, body, and labels.
+3. `claude -p` drafts `{ branch, workspace }` from that content — e.g.
+   `614-fix-login-redirect` + a short workspace label. Falls back to a
+   deterministic `issue-<n>-<title-slug>` if `claude` is missing or the output
+   can't be parsed (naming never blocks the flow).
+4. `herdr worktree create --branch <branch> --label <workspace>` makes the
+   worktree, **branched off the repo's default branch** (auto-detected — not
+   whatever branch you happened to trigger from). This fires `worktree.created`,
+   so the **superset-bootstrap** plugin auto-runs the repo's `setup` in the
+   fresh checkout.
+5. The chosen agent starts in the worktree's root pane, seeded with a prompt
+   pointing at the issue.
+
+### Naming
+
+The "agent drafts the names" step is a single non-interactive `claude -p` call,
+not a full interactive agent — names must be decided *before* the worktree (the
+agent's working dir) exists. Tune or disable it in `config.json`:
+
+| Key | Effect |
+| --- | ------ |
+| `defaultAgent`    | `claude` or `codex` (the interactive agent started in the worktree) |
+| `baseRef`         | branch off this ref; empty = auto-detect the repo default (`origin/HEAD`, else `main`/`master`/`develop`) |
+| `namingModel`     | model for the naming call (empty = your `claude` default) |
+| `promptTemplate`  | seed prompt; `{url}` `{title}` `{number}` `{branch}` `{workspace}` |
+
+Config seeds from `config.example.json` on first run. Find it with:
+
+```bash
+herdr plugin config-dir github-issue-worktree
+```
+
+### Keybinding (tracked in `config.toml`)
+
+| Key | Action |
+| --- | ------ |
+| `prefix+shift+i` | start a worktree from a GitHub issue (`i` = issue) |
+
+Pairs with the built-in `new_worktree` (`prefix+shift+g`) — same "g/i" worktree
+family, but this one seeds the checkout from an issue. Requires `gh`
+(authenticated) and `node` 18+ on `PATH`; `claude` is optional (naming only).
+Built for Herdr **0.7.0+**.
 
 ## Installed marketplace plugins
 

@@ -187,6 +187,16 @@ type = "plugin_action"
 command = "copy-workspace-path.copy-path-workspace"
 description = "copy workspace path (yank)"
 
+# github-issue-worktree: paste a GitHub issue, let claude draft branch/workspace
+# names from the issue content, then create a worktree + branch and launch an
+# agent in it. Pairs with new_worktree (prefix+shift+g): same "g" family, but
+# this one seeds the checkout from an issue. i = issue.
+[[keys.command]]
+key = "prefix+shift+i"
+type = "plugin_action"
+command = "github-issue-worktree.start"
+description = "start worktree from github issue"
+
 [theme]
 name = "tokyo-night"
 
