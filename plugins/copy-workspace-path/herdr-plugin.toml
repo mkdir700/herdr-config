@@ -1,0 +1,47 @@
+# herdr-plugin.toml — manifest for the copy-workspace-path plugin.
+#
+# Copies the focused workspace/tab/pane's working directory to the system
+# clipboard. No event hooks, nothing automatic — it only runs when invoked.
+#
+# NOTE: herdr 0.7.0's sidebar right-click menu is built-in and does NOT render
+# plugin actions, so these are triggered by a keybinding (see config.toml) or
+# `herdr plugin action invoke`, not the context menu. The contexts values below
+# are forward-looking metadata for if/when the menu becomes plugin-extensible.
+#
+# One action per level (all titled "Copy path"). They share
+# scripts/copy-path.sh, which takes the level as its argument:
+#   workspace -> cwd of the workspace's active pane
+#   tab       -> cwd of the tab's active pane
+#   pane      -> cwd of that pane
+# herdr injects HERDR_{WORKSPACE,TAB,PANE}_ID (the clicked item) plus
+# HERDR_PLUGIN_CONTEXT_JSON; the script resolves the cwd via the socket API.
+# Clipboard write is portable: clip.exe on WSL, pbcopy on macOS, wl-copy/xclip.
+
+id = "copy-workspace-path"
+name = "Copy Workspace Path"
+version = "0.2.0"
+description = "Right-click a workspace, tab, or pane in the sidebar to copy its working directory path to the clipboard."
+min_herdr_version = "0.7.0"
+platforms = ["linux", "macos"]
+
+# contexts places each entry in the matching right-click menu.
+[[actions]]
+id = "copy-path-workspace"
+title = "Copy path"
+description = "Copy the right-clicked workspace's working directory to the clipboard."
+contexts = ["workspace"]
+command = ["bash", "scripts/copy-path.sh", "workspace"]
+
+[[actions]]
+id = "copy-path-tab"
+title = "Copy path"
+description = "Copy the right-clicked tab's working directory to the clipboard."
+contexts = ["tab"]
+command = ["bash", "scripts/copy-path.sh", "tab"]
+
+[[actions]]
+id = "copy-path-pane"
+title = "Copy path"
+description = "Copy the right-clicked pane's working directory to the clipboard."
+contexts = ["pane"]
+command = ["bash", "scripts/copy-path.sh", "pane"]

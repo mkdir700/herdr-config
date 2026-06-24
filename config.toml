@@ -177,5 +177,18 @@ type = "shell"
 command = "herdr plugin action invoke branch-tab --plugin tuicr-diff"
 description = "diff: branch vs base (tab)"
 
+# copy-workspace-path: copy the focused workspace's directory to the clipboard.
+# herdr 0.7.0's sidebar right-click menu is built-in and does NOT surface plugin
+# actions, so the plugin's "Copy path" is bound to a key instead. y = yank.
+# Variants for the focused tab/pane: command = "...copy-path-tab" / "...-pane".
+[[keys.command]]
+key = "prefix+y"
+type = "plugin_action"
+command = "copy-workspace-path.copy-path-workspace"
+description = "copy workspace path (yank)"
+
 [theme]
 name = "vesper"
+
+[ui.toast]
+delivery = "herdr"

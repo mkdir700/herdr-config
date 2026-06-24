@@ -18,6 +18,9 @@ plugins/tuicr-diff/                 # Local plugin: review git diffs via tuicr (
   herdr-plugin.toml
   scripts/launch.sh                 #   idempotent open/focus/close launcher
   scripts/tuicr-diff.sh             #   pane wrapper: detect base, run tuicr -w / -r base...HEAD
+plugins/copy-workspace-path/        # Local plugin: "Copy path" (prefix+y) — copy focused workspace/tab/pane cwd
+  herdr-plugin.toml
+  scripts/copy-path.sh              #   resolve the focused item's cwd, copy to clipboard
 ```
 
 ## config.toml
@@ -178,6 +181,60 @@ Requires `jq` and [`tuicr`](https://tuicr.dev) on `PATH`
 (`curl -fsSL tuicr.dev/install.sh | sh`, or `brew install agavra/tap/tuicr`,
 `cargo install tuicr`). Built for Herdr **0.7.0+**.
 
+## Plugin: copy-workspace-path
+
+A local Herdr plugin that copies the focused workspace/tab/pane's working
+directory to the system clipboard.
+
+> **Why a keybinding, not a right-click menu item.** The original goal was a
+> "Copy path" entry in the sidebar right-click menu. **Herdr 0.7.0's right-click
+> menu is built-in and does not render plugin actions** (the `contexts` field is
+> accepted but unused by the menu in this version — even the official
+> `github-start` plugin's `contexts`-tagged action does not appear there). So
+> the action is surfaced as a **keybinding** instead — the documented way to
+> trigger a plugin action, same as `github-start`. Revisit the menu approach if
+> a future Herdr release makes the context menu plugin-extensible.
+
+### How it works
+
+Three actions (`copy-path-workspace` / `-tab` / `-pane`), all titled **Copy
+path**, sharing `scripts/copy-path.sh` which takes the level as its argument.
+Each is invoked by a keybinding (or `herdr plugin action invoke
+copy-workspace-path.copy-path-<level>`). The `contexts` values are kept as
+forward-looking metadata for if/when the menu becomes extensible.
+
+On invocation Herdr injects the focused item's id (`HERDR_WORKSPACE_ID` /
+`HERDR_TAB_ID` / `HERDR_PANE_ID`) plus a flat `HERDR_PLUGIN_CONTEXT_JSON`. The
+script resolves the cwd from that id against `pane list` (authoritative),
+falling back to the context JSON or the focused pane when an id is missing:
+
+| Level | What gets copied |
+| ----- | ---------------- |
+| **workspace** | cwd of the workspace's active pane |
+| **tab**       | cwd of the tab's active pane |
+| **pane**      | cwd of that pane |
+
+A workspace/tab has no path of its own — its "path" is the cwd Herdr tracks for
+its active pane, so that is what gets copied.
+
+### Keybinding (tracked in `config.toml`)
+
+| Key | Action |
+| --- | ------ |
+| `prefix+y` | copy the focused **workspace**'s path (yank) |
+
+Bind the tab/pane variants the same way with `command =
+"copy-workspace-path.copy-path-tab"` / `"...copy-path-pane"`.
+
+### Clipboard
+
+Portable, first available wins: `pbcopy` (macOS), `clip.exe` (WSL — sets the
+Windows clipboard), `wl-copy` (Wayland), `xclip` / `xsel` (X11). On success it
+fires a best-effort top-right toast (visible only when `ui.toast.delivery =
+"herdr"`); the copy itself works regardless.
+
+Requires `jq` on `PATH`. Menu-only — no keybinding. Built for Herdr **0.7.0+**.
+
 ## Installed marketplace plugins
 
 These are installed from GitHub (not tracked in this repo — `herdr plugin
@@ -211,6 +268,7 @@ git clone https://github.com/mkdir700/herdr-config ~/.config/herdr
 cd ~/.config/herdr
 herdr plugin link plugins/superset-bootstrap   # local plugin
 herdr plugin link plugins/tuicr-diff           # local plugin (needs `tuicr` on PATH)
+herdr plugin link plugins/copy-workspace-path  # local plugin ("Copy path" workspace menu item)
 # then reinstall the marketplace plugins listed above
 ```
 
