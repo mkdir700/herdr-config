@@ -60,6 +60,8 @@ LazyVim's `<C-hjkl>`.
 | Wksp  | `w`                   | workspace picker | — |
 | Wksp  | `Shift+n` / `Shift+w` / `Shift+d` | new / rename / close workspace | — |
 | Wksp  | `Shift+1`..`Shift+9`  | switch to workspace N | — |
+| Wksp  | `{` / `}`             | previous / next workspace | — |
+| Agent | `,` / `.`             | previous / next agent (any workspace/tab) | — |
 | Misc  | `?` `s` `q` `g` `o` `e` `c` `b` | help / settings / detach / goto / notification / edit-scrollback / copy-mode / sidebar | — |
 
 Notes:
@@ -69,6 +71,9 @@ Notes:
 - **Split direction** follows Vim's convention (`-` stacks, `|` is side by side).
   If it feels swapped on your terminal, swap the `split_horizontal` /
   `split_vertical` values in `config.toml`.
+- **Workspace `{` / `}`** mirror the tab `[` / `]` bindings — outer brackets for
+  the outer container. **Agent `,` / `.`** cycle focus across agent panes
+  regardless of layout; `Shift+hjkl` is left to herdr's built-in `swap_pane`.
 
 ```toml
 # Worktree keybindings (prefix defaults to ctrl+b).

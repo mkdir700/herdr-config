@@ -69,6 +69,14 @@ new_workspace    = "prefix+shift+n"
 rename_workspace = "prefix+shift+w"
 close_workspace  = "prefix+shift+d"
 switch_workspace = "prefix+shift+1..9"
+# prev/next workspace: { } mirror the tab [ ] bindings (outer container)
+previous_workspace = "prefix+{"
+next_workspace     = "prefix+}"
+
+# --- Agents (cycle focus across agent panes, any workspace/tab) -------------
+# , / . = previous / next (Shift+hjkl is taken by swap_pane).
+previous_agent = "prefix+,"
+next_agent     = "prefix+."
 
 # --- Worktrees (custom) -----------------------------------------------------
 new_worktree    = "prefix+shift+g"   # create a new branch + checkout
