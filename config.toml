@@ -49,7 +49,7 @@ focus_pane_right    = "prefix+l"
 split_horizontal    = "prefix+minus"         # <leader>- split below (stacked)
 split_vertical      = "prefix+|"             # <leader>| split right (side by side)
 close_pane          = "prefix+x"             # delete window
-zoom                = "prefix+z"             # <leader>wm maximize toggle
+zoom                = "prefix+m"             # <leader>wm maximize/restore toggle (m = maximize)
 resize_mode         = "prefix+r"
 cycle_pane_next     = "prefix+tab"
 cycle_pane_previous = "prefix+shift+tab"
@@ -120,6 +120,22 @@ key = "ctrl+l"
 type = "plugin_action"
 command = "vim-herdr-navigation.right"
 description = "navigate right (vim/herdr)"
+
+# Pane width resize: prefix+< narrower, prefix+> wider (literal shifted chars,
+# shift is implicit in </>). Each press nudges the vertical-split border by 5%.
+# resize_mode (prefix+r) still handles modal hjkl resizing. If direction feels
+# inverted, swap the two --direction values below.
+[[keys.command]] # widen focused pane
+key = "prefix+>"
+type = "shell"
+command = "herdr pane resize --direction right --amount 0.05 --current"
+description = "pane wider"
+
+[[keys.command]] # narrow focused pane
+key = "prefix+<"
+type = "shell"
+command = "herdr pane resize --direction left --amount 0.05 --current"
+description = "pane narrower"
 
 [[keys.command]] # open file viewer in a split beside your work
 key = "prefix+f"
