@@ -1,0 +1,38 @@
+# herdr-plugin.toml — manifest for the lazygit plugin.
+#
+# Opens lazygit (https://github.com/jesseduffield/lazygit) — a terminal UI for
+# git — in its own herdr tab. Summoned ONLY by an explicit action/keybinding —
+# no event hooks, nothing automatic. The viewer is transient: quitting lazygit
+# (`q`) exits the process so the tab disappears with it.
+#
+# Single instance, idempotent toggle (see scripts/launch.sh):
+#   no lazygit tab           -> open one (focused)
+#   lazygit tab, not focused -> switch to it
+#   already on the lazygit tab -> close it (toggle off)
+
+id = "lazygit"
+name = "lazygit"
+version = "0.1.0"
+description = "Open lazygit (terminal git UI) in a herdr tab — idempotent toggle: open / focus / close."
+min_herdr_version = "0.7.0"
+platforms = ["linux", "macos"]
+
+# Single pane entrypoint. The title is the pane's label in `herdr pane list`,
+# and the launcher keys its idempotent toggle off it.
+#
+# The pane command is a path relative to the plugin root (the new pane's default
+# cwd), so the launcher passes the repo to open via `--env HERDR_LAZYGIT_REPO`
+# rather than `--cwd` (which would change where this relative path resolves).
+[[panes]]
+id = "lazygit"
+title = "lazygit"
+placement = "tab"
+command = ["bash", "scripts/lazygit.sh"]
+
+# One action: idempotent open/focus/close in a tab. Bind it to a key in
+# ~/.config/herdr/config.toml (suggested bind is in the plugin README).
+[[actions]]
+id = "toggle"
+title = "lazygit (tab)"
+description = "Open lazygit in its own tab; focus it if it exists; close it if already focused."
+command = ["bash", "scripts/launch.sh"]

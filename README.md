@@ -27,6 +27,10 @@ plugins/github-issue-worktree/      # Local plugin: issue → worktree (prefix+s
   config.example.json               #   default agent, base ref, prompt template
   scripts/open.js                   #   action entrypoint: open the overlay prompt
   scripts/prompt.js                 #   read issue, draft names, create worktree, launch agent
+plugins/lazygit/                    # Local plugin: lazygit in a tab (prefix+v) — idempotent open/focus/close
+  herdr-plugin.toml
+  scripts/launch.sh                 #   idempotent open/focus/close launcher (single tab instance)
+  scripts/lazygit.sh                #   pane wrapper: cd to repo, exec lazygit
 ```
 
 ## config.toml
@@ -301,6 +305,46 @@ family, but this one seeds the checkout from an issue. Requires `gh`
 (authenticated) and `node` 18+ on `PATH`; `claude` is optional (naming only).
 Built for Herdr **0.7.0+**.
 
+## Plugin: lazygit
+
+A local Herdr plugin that opens **[lazygit](https://github.com/jesseduffield/lazygit)**
+— a terminal UI for git — in its own tab, then gets out of the way.
+
+### Behaviour
+
+A single lazygit instance lives in its own tab. The bound key (`prefix+v`) is an
+**idempotent toggle**, exactly like `tuicr-diff`'s tab variant:
+
+| State when you press the key | What happens |
+| ---------------------------- | ------------ |
+| No lazygit tab               | open lazygit in a new tab (focused) |
+| lazygit tab exists, elsewhere | switch to that tab |
+| Already on the lazygit tab   | close it (toggle off) |
+
+The viewer is **transient**: quitting lazygit (`q`) exits the process, so the tab
+disappears with it. lazygit runs in the focused pane's repo — the launcher hands
+the focused pane's cwd to the new pane via `--env HERDR_LAZYGIT_REPO`, and lazygit
+walks up to the enclosing git repo from there.
+
+### How it works
+
+One pane entrypoint (`lazygit`, title `lazygit`) and one action (`toggle`). The
+launcher (`scripts/launch.sh`) keys its decision off the pane **label** in
+`herdr pane list` (so the single instance is found regardless of tab), and
+ids pulled from the host JSON are validated flag-safe before reaching an argv
+(option-injection guard), mirroring the `tuicr-diff` launcher.
+
+### Keybinding (tracked in `config.toml`)
+
+| Key | Action |
+| --- | ------ |
+| `prefix+v` | toggle lazygit in a tab (open / focus / close) |
+
+`v` is the slot freed when `split_vertical` moved to `prefix+plus`; a loose
+mnemonic for version-control. The obvious `g`/`shift+g` were already taken by
+`goto` / `new_worktree`. Requires [`lazygit`](https://github.com/jesseduffield/lazygit)
+and `jq` on `PATH`. Built for Herdr **0.7.0+**.
+
 ## Installed marketplace plugins
 
 These are installed from GitHub (not tracked in this repo — `herdr plugin
@@ -338,7 +382,7 @@ cd ~/.config/herdr
 
 `scripts/link-local-plugins.sh` links all the local plugins in one shot
 (`superset-bootstrap`, `tuicr-diff`, `copy-workspace-path`,
-`github-issue-worktree`). The `plugins.json` link registry is machine-specific
+`github-issue-worktree`, `lazygit`). The `plugins.json` link registry is machine-specific
 and not tracked, so it has to be rebuilt on every new machine — run this script
 after cloning. If a plugin keybinding ever does nothing and
 `herdr plugin action invoke ...` returns `plugin_not_found`, the registry was

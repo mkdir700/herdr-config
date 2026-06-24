@@ -177,6 +177,15 @@ type = "shell"
 command = "herdr plugin action invoke branch-tab --plugin tuicr-diff"
 description = "diff: branch vs base (tab)"
 
+# lazygit: open lazygit (terminal git UI) in its own tab. Idempotent toggle —
+# press to open, again to focus, once more (while on it) to close. v = the freed
+# split_vertical slot (now prefix+plus); a loose mnemonic for version-control.
+[[keys.command]]
+key = "prefix+v"
+type = "plugin_action"
+command = "lazygit.toggle"
+description = "lazygit (tab toggle)"
+
 # copy-workspace-path: copy the focused workspace's directory to the clipboard.
 # herdr 0.7.0's sidebar right-click menu is built-in and does NOT surface plugin
 # actions, so the plugin's "Copy path" is bound to a key instead. y = yank.
