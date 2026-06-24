@@ -30,8 +30,48 @@ agent_panel_scope = "all"
 # Layout: <directory>/<repo>/<branch-slug>
 [worktrees]
 directory = "~/.herdr/worktrees"
+```
 
-# Worktree keybindings (prefix defaults to ctrl+b; unset by default in Herdr).
+### Keybindings — aligned to LazyVim
+
+The full `[keys]` block is remapped to **LazyVim** conventions for Vim muscle
+memory. Herdr uses a tmux-style **prefix** model (press the prefix, then a key),
+so the prefix (`ctrl+b`) plays the role of LazyVim's `<leader>` — Vim's `Space`
+leader can't be a multiplexer prefix without eating every space you type.
+
+Concept mapping: herdr **pane** → nvim window (split), herdr **tab** → nvim tab,
+herdr **workspace** → project/session.
+
+**Window navigation is direct (no prefix):** `Ctrl+h/j/k/l` moves across Vim
+splits *and* herdr panes seamlessly (via `vim-herdr-navigation`), exactly like
+LazyVim's `<C-hjkl>`.
+
+| Scope | Key (after `ctrl+b`) | Action | LazyVim analog |
+| ----- | -------------------- | ------ | -------------- |
+| Pane  | `h` / `j` / `k` / `l` | focus left/down/up/right | `<C-hjkl>` |
+| Pane  | `-`                   | split below (stacked)    | `<leader>-` |
+| Pane  | `\|`                  | split right (side by side) | `<leader>\|` |
+| Pane  | `x` / `z` / `r`       | close / maximize / resize mode | `<leader>wd` / `wm` |
+| Pane  | `Tab` / `Shift+Tab`   | cycle next / previous panes | — |
+| Pane  | `Shift+p`             | rename pane | — |
+| Tab   | `[` / `]`             | previous / next tab | `<leader><tab>[` / `]` |
+| Tab   | `t` / `Shift+t` / `Shift+x` | new / rename / close tab | `<leader><tab><tab>` |
+| Tab   | `1`..`9`              | switch to tab N | — |
+| Wksp  | `w`                   | workspace picker | — |
+| Wksp  | `Shift+n` / `Shift+w` / `Shift+d` | new / rename / close workspace | — |
+| Wksp  | `Shift+1`..`Shift+9`  | switch to workspace N | — |
+| Misc  | `?` `s` `q` `g` `o` `e` `c` `b` | help / settings / detach / goto / notification / edit-scrollback / copy-mode / sidebar | — |
+
+Notes:
+
+- `copy_mode` is moved off its hidden default (`prefix+[`) to `prefix+c`, freeing
+  `[` / `]` for LazyVim-style tab navigation.
+- **Split direction** follows Vim's convention (`-` stacks, `|` is side by side).
+  If it feels swapped on your terminal, swap the `split_horizontal` /
+  `split_vertical` values in `config.toml`.
+
+```toml
+# Worktree keybindings (prefix defaults to ctrl+b).
 [keys]
 new_worktree    = "prefix+shift+g"
 open_worktree   = "prefix+shift+o"

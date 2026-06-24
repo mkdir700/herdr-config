@@ -1,19 +1,91 @@
 onboarding = false
+
 [ui]
 agent_panel_scope = "all"
+show_agent_labels_on_pane_borders = true
 
 # Root directory for git worktree checkouts created from the sidebar/CLI.
 # Layout: <directory>/<repo>/<branch-slug>
-show_agent_labels_on_pane_borders = true
 [worktrees]
 directory = "~/.herdr/worktrees"
 
-# Keybindings (prefix defaults to ctrl+b).
-# These three worktree bindings are unset by default — enabling them here.
+# ============================================================================
+# Keybindings — aligned to LazyVim conventions for a Vim user.
+#
+# herdr is a terminal multiplexer, so it uses a tmux-style *prefix* model:
+# press the prefix, then a key. The prefix plays the role of LazyVim's <leader>
+# (LazyVim's Space cannot be a multiplexer prefix — it would eat every space you
+# type in a shell/agent). So "prefix+x" below is the equivalent of "<leader>x".
+#
+# Concept mapping:   herdr pane  -> nvim window (split)
+#                    herdr tab   -> nvim tab
+#                    herdr wksp  -> project / session (sidebar)
+#
+# Window navigation (Ctrl+h/j/k/l) is handled WITHOUT prefix by the
+# vim-herdr-navigation plugin further down — it moves across Vim splits AND
+# herdr panes seamlessly, exactly like LazyVim's <C-h/j/k/l>.
+# ============================================================================
 [keys]
-new_worktree = "prefix+shift+g"  # create a new branch + checkout
-open_worktree = "prefix+shift+o" # list and open existing worktrees
-remove_worktree = "prefix+alt+d" # delete a worktree checkout
+prefix = "ctrl+b"
+
+# --- Leader-level actions ---------------------------------------------------
+help                     = "prefix+?"        # <leader>? cheatsheet
+settings                 = "prefix+s"
+detach                   = "prefix+q"        # <leader>qq quit/detach
+reload_config            = "prefix+shift+r"
+goto                     = "prefix+g"
+open_notification_target = "prefix+o"
+edit_scrollback          = "prefix+e"        # edit pane scrollback in $EDITOR
+copy_mode                = "prefix+c"        # enter scrollback/copy mode (relocated off "[")
+toggle_sidebar           = "prefix+b"        # explorer-like sidebar (bar)
+
+# --- Panes = nvim windows (splits) ------------------------------------------
+focus_pane_left     = "prefix+h"
+focus_pane_down     = "prefix+j"
+focus_pane_up       = "prefix+k"
+focus_pane_right    = "prefix+l"
+# LazyVim: <leader>- split below, <leader>| split right.
+# If the two feel swapped on your setup, swap these two values.
+split_horizontal    = "prefix+minus"         # <leader>- split below (stacked)
+split_vertical      = "prefix+|"             # <leader>| split right (side by side)
+close_pane          = "prefix+x"             # delete window
+zoom                = "prefix+z"             # <leader>wm maximize toggle
+resize_mode         = "prefix+r"
+cycle_pane_next     = "prefix+tab"
+cycle_pane_previous = "prefix+shift+tab"
+rename_pane         = "prefix+shift+p"
+
+# --- Tabs = nvim tabs -------------------------------------------------------
+new_tab      = "prefix+t"            # <leader><tab><tab> new tab
+previous_tab = "prefix+["            # <leader><tab>[  previous tab
+next_tab     = "prefix+]"            # <leader><tab>]  next tab
+rename_tab   = "prefix+shift+t"
+close_tab    = "prefix+shift+x"
+switch_tab   = "prefix+1..9"
+
+# --- Workspaces = projects / sessions ---------------------------------------
+workspace_picker = "prefix+w"
+new_workspace    = "prefix+shift+n"
+rename_workspace = "prefix+shift+w"
+close_workspace  = "prefix+shift+d"
+switch_workspace = "prefix+shift+1..9"
+
+# --- Worktrees (custom) -----------------------------------------------------
+new_worktree    = "prefix+shift+g"   # create a new branch + checkout
+open_worktree   = "prefix+shift+o"   # list and open existing worktrees
+remove_worktree = "prefix+alt+d"     # delete a worktree checkout
+
+# --- Navigate/goto overlay (already Vim hjkl; kept explicit) ----------------
+navigate_workspace_up   = "up"
+navigate_workspace_down = "down"
+navigate_pane_left      = "h"
+navigate_pane_down      = "j"
+navigate_pane_up        = "k"
+navigate_pane_right     = "l"
+
+# ============================================================================
+# Custom command bindings
+# ============================================================================
 
 # vim-herdr-navigation: Ctrl+h/j/k/l move across Vim splits AND herdr panes.
 # Direct chords (no prefix). Shadows readline Ctrl+l/Ctrl+k in non-Vim panes.
@@ -41,7 +113,7 @@ type = "plugin_action"
 command = "vim-herdr-navigation.right"
 description = "navigate right (vim/herdr)"
 
-[[keys.command]] # open in a split beside your work
+[[keys.command]] # open file viewer in a split beside your work
 key = "prefix+f"
 type = "shell"
 command = "herdr plugin action invoke open-file-viewer --plugin herdr-file-viewer"
@@ -54,7 +126,7 @@ command = "herdr plugin action invoke open-file-viewer-tab --plugin herdr-file-v
 # nvim-diffview: review git diffs via Neovim's diffview.nvim. u = uncommitted
 # (working tree + index vs HEAD), a = whole branch against its base (base...HEAD).
 # base key = split, +shift = own tab. Idempotent: press again to focus, once more
-# to close. These four are conflict-free with herdr's default keybindings.
+# to close.
 [[keys.command]] # uncommitted changes, split
 key = "prefix+u"
 type = "shell"
