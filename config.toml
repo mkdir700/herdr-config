@@ -133,32 +133,32 @@ type = "shell"
 command = "herdr plugin action invoke open-file-viewer-tab --plugin herdr-file-viewer"
 description = "file viewer (tab)"
 
-# nvim-diffview: review git diffs via Neovim's diffview.nvim. u = uncommitted
-# (working tree + index vs HEAD), a = whole branch against its base (base...HEAD).
-# base key = split, +shift = own tab. Idempotent: press again to focus, once more
-# to close.
+# tuicr-diff: review git diffs via tuicr (terminal code-review TUI, no nvim).
+# u = uncommitted (working tree + index vs HEAD), a = whole branch against its
+# base (base...HEAD). base key = split, +shift = own tab. Idempotent: press
+# again to focus, once more to close.
 [[keys.command]] # uncommitted changes, split
 key = "prefix+u"
 type = "shell"
-command = "herdr plugin action invoke working-split --plugin nvim-diffview"
+command = "herdr plugin action invoke working-split --plugin tuicr-diff"
 description = "diff: uncommitted (split)"
 
 [[keys.command]] # uncommitted changes, own tab
 key = "prefix+shift+u"
 type = "shell"
-command = "herdr plugin action invoke working-tab --plugin nvim-diffview"
+command = "herdr plugin action invoke working-tab --plugin tuicr-diff"
 description = "diff: uncommitted (tab)"
 
 [[keys.command]] # branch vs base, split
 key = "prefix+a"
 type = "shell"
-command = "herdr plugin action invoke branch-split --plugin nvim-diffview"
+command = "herdr plugin action invoke branch-split --plugin tuicr-diff"
 description = "diff: branch vs base (split)"
 
 [[keys.command]] # branch vs base, own tab
 key = "prefix+shift+a"
 type = "shell"
-command = "herdr plugin action invoke branch-tab --plugin nvim-diffview"
+command = "herdr plugin action invoke branch-tab --plugin tuicr-diff"
 description = "diff: branch vs base (tab)"
 
 [theme]

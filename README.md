@@ -14,10 +14,10 @@ config.toml                         # Herdr settings (UI, worktrees, keybindings
 plugins/superset-bootstrap/         # Local plugin: reuse .superset/config.json for worktrees
   herdr-plugin.toml
   hook.sh
-plugins/nvim-diffview/              # Local plugin: review git diffs via Neovim's diffview.nvim
+plugins/tuicr-diff/                 # Local plugin: review git diffs via tuicr (terminal code-review TUI)
   herdr-plugin.toml
   scripts/launch.sh                 #   idempotent open/focus/close launcher
-  scripts/nvim-diff.sh              #   pane wrapper: detect base, run nvim +DiffviewOpen
+  scripts/tuicr-diff.sh             #   pane wrapper: detect base, run tuicr -w / -r base...HEAD
 ```
 
 ## config.toml
@@ -133,29 +133,30 @@ herdr plugin log list --plugin superset-bootstrap
   `herdr worktree remove --workspace <id> --force`.
 - Requires `jq`. Built for Herdr **0.7.0+**.
 
-## Plugin: nvim-diffview
+## Plugin: tuicr-diff
 
-A local Herdr plugin that opens **Neovim's [diffview.nvim](https://github.com/sindrets/diffview.nvim)**
-in a split or tab to review git diffs, then gets out of the way.
+A local Herdr plugin that opens **[tuicr](https://tuicr.dev)** — a terminal
+code-review TUI with vim keybindings — in a split or tab to review git diffs,
+then gets out of the way. No nvim involved.
 
 ### Two comparisons
 
-| Comparison | What it shows | diffview command |
-| ---------- | ------------- | ---------------- |
-| **working** | Uncommitted changes — working tree + index vs `HEAD` | `:DiffviewOpen` |
-| **branch**  | The whole branch — `base...HEAD` (every commit since the fork point) | `:DiffviewOpen <base>...HEAD` |
+| Comparison | What it shows | tuicr command |
+| ---------- | ------------- | ------------- |
+| **working** | Uncommitted changes — working tree + index vs `HEAD` | `tuicr -w` |
+| **branch**  | The whole branch — `base...HEAD` (every commit since the fork point) | `tuicr -r <base>...HEAD` |
 
 The **base** for the branch comparison is auto-detected: `origin/HEAD`'s default
 branch, else the first of `main` / `master` / `develop` that exists. Override it
-per repo with the `HERDR_DIFFVIEW_BASE` environment variable.
+per repo with the `HERDR_DIFF_BASE` environment variable.
 
 ### Behaviour
 
-- Runs Neovim with **your full config** — `diffview.nvim` must be installed there
-  (it is, via `lua/plugins/diffview.lua`).
-- **Transient viewer:** closing the diffview view (`:DiffviewClose` / `q`) quits
-  Neovim, so the split/tab disappears with it. Uses `:qa` (not `:qa!`), so edits
-  made in the diff prompt to save rather than being dropped.
+- Runs **tuicr** directly in the pane — a single static binary, no editor and no
+  runtime deps. Reviewing a local diff needs **no GitHub auth** (that's only for
+  `:submit`, which pushes a PR review).
+- **Transient viewer:** quitting tuicr (`q`) exits the process, so the split/tab
+  disappears with it.
 - **Idempotent toggle**, per comparison: pressing the key opens the diff; pressing
   it again focuses it; once more closes it. `working` and `branch` have separate
   identities and can be open at once. The tab variant switches to an existing diff
@@ -173,7 +174,9 @@ per repo with the `HERDR_DIFFVIEW_BASE` environment variable.
 These are chosen to be conflict-free with Herdr's default keybindings
 (`prefix+b` is `toggle_sidebar`, `prefix+shift+d` is `close_workspace`).
 
-Requires `jq` and `nvim` (with `diffview.nvim`). Built for Herdr **0.7.0+**.
+Requires `jq` and [`tuicr`](https://tuicr.dev) on `PATH`
+(`curl -fsSL tuicr.dev/install.sh | sh`, or `brew install agavra/tap/tuicr`,
+`cargo install tuicr`). Built for Herdr **0.7.0+**.
 
 ## Installed marketplace plugins
 
@@ -207,7 +210,7 @@ herdr plugin install ogulcancelik/herdr-plugin-github-start --yes
 git clone https://github.com/mkdir700/herdr-config ~/.config/herdr
 cd ~/.config/herdr
 herdr plugin link plugins/superset-bootstrap   # local plugin
-herdr plugin link plugins/nvim-diffview        # local plugin
+herdr plugin link plugins/tuicr-diff           # local plugin (needs `tuicr` on PATH)
 # then reinstall the marketplace plugins listed above
 ```
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Idempotent launcher for nvim-diffview, invoked by the four actions:
+# Idempotent launcher for tuicr-diff, invoked by the four actions:
 #
 #   launch.sh <spec> <placement>
 #     spec       working | branch    (which diff; encoded in the pane title)
@@ -29,7 +29,7 @@ herdr_bin="${HERDR_BIN_PATH:-herdr}"
 case "$spec" in
   working) entrypoint="diff-working"; title="Diff: working" ;;
   branch)  entrypoint="diff-branch";  title="Diff: branch"  ;;
-  *) printf 'nvim-diffview: unknown spec %q\n' "$spec" >&2; exit 2 ;;
+  *) printf 'tuicr-diff: unknown spec %q\n' "$spec" >&2; exit 2 ;;
 esac
 
 # Safe to place in an argv iff non-empty, not starting with '-', and only
@@ -63,7 +63,7 @@ fi
 open_pane() {
   local -a cmd=(
     "$herdr_bin" plugin pane open
-    --plugin nvim-diffview
+    --plugin tuicr-diff
     --entrypoint "$entrypoint"
     --placement "$placement"
     --focus
@@ -71,7 +71,7 @@ open_pane() {
   )
   [ "$placement" = "split" ] && cmd+=(--direction right)
   # Forward an explicit base override into the fresh pane env, if set.
-  [ -n "${HERDR_DIFFVIEW_BASE:-}" ] && cmd+=(--env "HERDR_DIFFVIEW_BASE=$HERDR_DIFFVIEW_BASE")
+  [ -n "${HERDR_DIFF_BASE:-}" ] && cmd+=(--env "HERDR_DIFF_BASE=$HERDR_DIFF_BASE")
   exec "${cmd[@]}"
 }
 
