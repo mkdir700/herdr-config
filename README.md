@@ -11,6 +11,7 @@ state (sockets, logs, session, plugin runtime copies) is intentionally
 
 ```
 config.toml                         # Herdr settings (UI, worktrees, keybindings)
+scripts/link-local-plugins.sh       # Re-link all local plugins (run after cloning)
 plugins/superset-bootstrap/         # Local plugin: reuse .superset/config.json for worktrees
   herdr-plugin.toml
   hook.sh
@@ -331,14 +332,18 @@ herdr plugin install ogulcancelik/herdr-plugin-github-start --yes
 ```bash
 git clone https://github.com/mkdir700/herdr-config ~/.config/herdr
 cd ~/.config/herdr
-herdr plugin link plugins/superset-bootstrap   # local plugin
-herdr plugin link plugins/tuicr-diff           # local plugin (needs `tuicr` on PATH)
-herdr plugin link plugins/copy-workspace-path  # local plugin ("Copy path" workspace menu item)
+./scripts/link-local-plugins.sh   # links every plugins/<name>/ with a herdr-plugin.toml
 # then reinstall the marketplace plugins listed above
 ```
 
-`plugin link` re-enables the local plugin (the `plugins.json` registry is
-machine-specific and not tracked, so it is rebuilt).
+`scripts/link-local-plugins.sh` links all the local plugins in one shot
+(`superset-bootstrap`, `tuicr-diff`, `copy-workspace-path`,
+`github-issue-worktree`). The `plugins.json` link registry is machine-specific
+and not tracked, so it has to be rebuilt on every new machine — run this script
+after cloning. If a plugin keybinding ever does nothing and
+`herdr plugin action invoke ...` returns `plugin_not_found`, the registry was
+reset; just run the script again. It's idempotent. You can still link an
+individual plugin by hand with `herdr plugin link plugins/<name>`.
 
 ## What's ignored
 
