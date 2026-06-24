@@ -188,7 +188,7 @@ command = "copy-workspace-path.copy-path-workspace"
 description = "copy workspace path (yank)"
 
 [theme]
-name = "vesper"
+name = "tokyo-night"
 
 [ui.toast]
 delivery = "herdr"
