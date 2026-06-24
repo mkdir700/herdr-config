@@ -202,3 +202,11 @@ name = "tokyo-night"
 
 [ui.toast]
 delivery = "herdr"
+
+[experimental]
+# While prefix mode is active, temporarily switch the macOS host input source to
+# an ASCII-capable keyboard layout (e.g. ABC) so prefix commands register even
+# when a CJK IME is active, then restore the previous input source when prefix
+# mode exits. macOS only; best-effort. (Built-in — no plugin needed; herdr has
+# no "prefix pressed" event for a plugin to hook anyway.)
+switch_ascii_input_source_in_prefix = true
