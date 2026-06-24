@@ -31,6 +31,10 @@ plugins/lazygit/                    # Local plugin: lazygit in a tab (prefix+v) 
   herdr-plugin.toml
   scripts/launch.sh                 #   idempotent open/focus/close launcher (single tab instance)
   scripts/lazygit.sh                #   pane wrapper: cd to repo, exec lazygit
+plugins/gh-pr/                      # Local fork: branch PR status in the sidebar, as a colored dot
+  herdr-plugin.toml
+  bin/                              #   update-pr-status.ts (labeler) / open-pr.ts (open in browser)
+  src/                              #   label.ts (colored-dot composition) / main.ts / throttle.ts
 ```
 
 ## config.toml
@@ -345,6 +349,37 @@ mnemonic for version-control. The obvious `g`/`shift+g` were already taken by
 `goto` / `new_worktree`. Requires [`lazygit`](https://github.com/jesseduffield/lazygit)
 and `jq` on `PATH`. Built for Herdr **0.7.0+**.
 
+## Plugin: gh-pr (local fork)
+
+A local fork of [`wyattjoh/herdr-plugin-gh-pr`](https://github.com/wyattjoh/herdr-plugin-gh-pr)
+that labels the focused **agent** pane's sidebar row with its git branch's GitHub
+PR status. The label reads like `#1157 🟣` — the PR number plus a **colored status
+dot** so the state reads at a glance:
+
+| Dot | Meaning |
+| --- | ------- |
+| 🟢 | open, CI green (passing, or no checks gating the branch) |
+| 🟡 | open, CI not green yet (failing or still pending) |
+| 🟣 | merged |
+| 🔴 | closed |
+
+While a refresh is in flight the dot is `⟳`.
+
+### Why a fork (and why a dot, not colored text)
+
+Herdr renders the sidebar `custom_status` as **plain text**: on normalization it
+strips control characters (so ANSI color escapes do not survive) and caps the
+string at 32 chars — there is no markup or per-source color directive. So the PR
+number itself cannot be colored. The only way to convey status by color in the
+sidebar is a glyph that carries its own color, hence the emoji dots. Upstream
+ships monochrome symbols (`✓ ✗ ● ◆ ⊘`); this fork swaps `composeLabel`
+(`src/label.ts`) for the colored dots above. Everything else is unchanged.
+
+Because the change lives in plugin code, the marketplace install is replaced by
+this tracked local plugin. It is picked up automatically by
+`scripts/link-local-plugins.sh`. Requires `bun`, `gh` (authenticated), and `git`
+on `PATH`. Built for Herdr **0.7.0+**.
+
 ## Installed marketplace plugins
 
 These are installed from GitHub (not tracked in this repo — `herdr plugin
@@ -353,17 +388,19 @@ machine with the commands below.
 
 | Plugin | What it does | Deps |
 | ------ | ------------ | ---- |
-| [`wyattjoh/herdr-plugin-gh-pr`](https://github.com/wyattjoh/herdr-plugin-gh-pr) | Shows the focused worktree branch's GitHub PR status in the sidebar | `bun`, `gh` |
 | [`smarzban/herdr-file-viewer`](https://github.com/smarzban/herdr-file-viewer) | Git-aware read-only file viewer TUI (tree + diff/markdown/syntax in a split pane) | `cargo` (builds on install) |
 | [`paulbkim-dev/vim-herdr-navigation`](https://github.com/paulbkim-dev/vim-herdr-navigation) | Seamless `Ctrl+h/j/k/l` navigation across Herdr panes and Vim/Neovim splits | `bash` |
 | [`ogulcancelik/herdr-plugin-github-start`](https://github.com/ogulcancelik/herdr-plugin-github-start) | Start Claude/Codex from a GitHub issue, PR, or discussion | `node` |
 
 ```bash
-herdr plugin install wyattjoh/herdr-plugin-gh-pr --yes
 herdr plugin install smarzban/herdr-file-viewer --yes
 herdr plugin install paulbkim-dev/vim-herdr-navigation --yes
 herdr plugin install ogulcancelik/herdr-plugin-github-start --yes
 ```
+
+> `gh-pr` used to be installed from `wyattjoh/herdr-plugin-gh-pr`; it is now a
+> tracked local fork (`plugins/gh-pr/`, colored status dots) linked by
+> `link-local-plugins.sh`, so it is no longer a marketplace install.
 
 > **`vim-herdr-navigation` needs two more steps** beyond `plugin install`:
 > 1. The `[[keys.command]]` bindings for `Ctrl+h/j/k/l` in `config.toml` — already
@@ -382,7 +419,7 @@ cd ~/.config/herdr
 
 `scripts/link-local-plugins.sh` links all the local plugins in one shot
 (`superset-bootstrap`, `tuicr-diff`, `copy-workspace-path`,
-`github-issue-worktree`, `lazygit`). The `plugins.json` link registry is machine-specific
+`github-issue-worktree`, `lazygit`, `gh-pr`). The `plugins.json` link registry is machine-specific
 and not tracked, so it has to be rebuilt on every new machine — run this script
 after cloning. If a plugin keybinding ever does nothing and
 `herdr plugin action invoke ...` returns `plugin_not_found`, the registry was
