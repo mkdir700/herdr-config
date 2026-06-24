@@ -117,11 +117,13 @@ description = "navigate right (vim/herdr)"
 key = "prefix+f"
 type = "shell"
 command = "herdr plugin action invoke open-file-viewer --plugin herdr-file-viewer"
+description = "file viewer (split)"
 
 [[keys.command]] # …or in its own tab
 key = "prefix+shift+f"
 type = "shell"
 command = "herdr plugin action invoke open-file-viewer-tab --plugin herdr-file-viewer"
+description = "file viewer (tab)"
 
 # nvim-diffview: review git diffs via Neovim's diffview.nvim. u = uncommitted
 # (working tree + index vs HEAD), a = whole branch against its base (base...HEAD).
@@ -131,21 +133,25 @@ command = "herdr plugin action invoke open-file-viewer-tab --plugin herdr-file-v
 key = "prefix+u"
 type = "shell"
 command = "herdr plugin action invoke working-split --plugin nvim-diffview"
+description = "diff: uncommitted (split)"
 
 [[keys.command]] # uncommitted changes, own tab
 key = "prefix+shift+u"
 type = "shell"
 command = "herdr plugin action invoke working-tab --plugin nvim-diffview"
+description = "diff: uncommitted (tab)"
 
 [[keys.command]] # branch vs base, split
 key = "prefix+a"
 type = "shell"
 command = "herdr plugin action invoke branch-split --plugin nvim-diffview"
+description = "diff: branch vs base (split)"
 
 [[keys.command]] # branch vs base, own tab
 key = "prefix+shift+a"
 type = "shell"
 command = "herdr plugin action invoke branch-tab --plugin nvim-diffview"
+description = "diff: branch vs base (tab)"
 
 [theme]
 name = "vesper"
