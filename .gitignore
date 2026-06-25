@@ -16,3 +16,4 @@ plugins/config/
 # OS noise
 .DS_Store
 .envrc
+release-notes.json
