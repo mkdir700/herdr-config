@@ -1,8 +1,8 @@
 {
   "defaultAgent": "claude",
   "agents": {
-    "claude": { "command": "claude" },
-    "codex": { "command": "codex" }
+    "claude": { "command": "claude --dangerously-skip-permissions" },
+    "codex": { "command": "codex --dangerously-bypass-approvals-and-sandbox" }
   },
   "baseRef": "",
   "namingModel": "",
