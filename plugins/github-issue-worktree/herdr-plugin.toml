@@ -24,21 +24,21 @@
 # optional (only used to draft names — falls back to a title slug without it).
 
 id = "github-issue-worktree"
-name = "GitHub Issue -> Worktree"
-version = "0.1.0"
-description = "Start a git worktree + branch from a GitHub issue, with branch/workspace names drafted by claude from the issue content."
+name = "GitHub Issue/PR -> Worktree"
+version = "0.2.0"
+description = "Start a git worktree from a GitHub issue (new branch, claude-named), a PR (imports its remote head branch), or a raw branch name — auto-detected from the input."
 min_herdr_version = "0.7.0"
 platforms = ["linux", "macos"]
 
 [[actions]]
 id = "start"
-title = "Start worktree from GitHub issue"
-description = "Read a GitHub issue, draft branch/workspace names from its content, create a worktree + branch, and launch an agent in it."
+title = "Start worktree from GitHub issue/PR"
+description = "Paste an issue ref (new branch, claude-named), a PR ref (imports the remote head branch), or a branch name; the plugin auto-detects which, creates a worktree, and launches an agent in it."
 contexts = ["workspace", "tab", "pane"]
 command = ["node", "scripts/open.js"]
 
 [[panes]]
 id = "prompt"
-title = "GitHub Issue -> Worktree"
+title = "GitHub Issue/PR -> Worktree"
 placement = "overlay"
 command = ["node", "scripts/prompt.js"]

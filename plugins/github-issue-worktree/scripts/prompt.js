@@ -33,6 +33,10 @@ const defaultConfig = {
   namingModel: "",
   promptTemplate:
     "Work on this GitHub issue: {url}\n\nTitle: {title}\n\nRead the issue with `gh issue view {number}`, then propose a short plan before changing code.",
+  prPromptTemplate:
+    "Continue work on this pull request: {url}\n\nTitle: {title}\nBranch: {branch}\n\nRead it with `gh pr view {number}` and `gh pr diff {number}`, then propose a short plan before changing code.",
+  branchPromptTemplate:
+    "You are on branch {branch} (imported from origin). Review the recent changes with `git log` / `git diff`, then propose a short plan before changing code.",
   timing: { afterAgentStartMs: 1500, afterPromptMs: 600, afterOverlayCloseFocusMs: 400 },
 };
 
@@ -130,19 +134,57 @@ function focusWorkspaceAfterOverlayCloses(workspaceId, delayMs) {
   child.unref();
 }
 
-// ---------------------------------------------------------------- issue parsing
+// ---------------------------------------------------------------- reference parsing
 
-function parseIssueRef(raw) {
+// Classify the overlay input into one of three kinds:
+//   issue  -> read the issue, draft fresh branch/workspace names, create a new
+//             branch + worktree (the original flow)
+//   pr     -> import the PR's existing (remote) head branch into a worktree
+//   branch -> import a raw remote branch name into a worktree
+// A bare "#614"/"614" is ambiguous (issue vs PR share the number space), so it
+// comes back as "unknown" and resolveKind() probes `gh pr view` to decide.
+function parseRef(raw) {
   const item = String(raw || "").trim();
   if (!item) return null;
 
-  const url = item.match(/github\.com\/([^/\s]+)\/([^/\s]+)\/(?:issues|pull)\/([0-9]+)/i);
+  // Full GitHub URL — /pull/ vs /issues/ states the kind outright.
+  const url = item.match(/github\.com\/([^/\s]+)\/([^/\s]+)\/(issues|pull)\/([0-9]+)/i);
   if (url) {
-    return { owner: url[1], repo: url[2], number: url[3], url: item.startsWith("http") ? item : `https://${item}` };
+    return {
+      kind: url[3].toLowerCase() === "pull" ? "pr" : "issue",
+      owner: url[1],
+      repo: url[2],
+      number: url[4],
+      url: item.startsWith("http") ? item : `https://${item}`,
+    };
   }
-  const num = item.match(/(?:^|#|\bissue[\s#-]*|\bpr[\s#-]*|\bpull[\s#-]*)([0-9]+)$/i);
-  if (num) return { owner: "", repo: "", number: num[1], url: "" };
+
+  // Explicit keyword prefix: "pr 614", "pull #614", "issue 614".
+  const pr = item.match(/^(?:pr|pull)[\s#-]*([0-9]+)$/i);
+  if (pr) return { kind: "pr", owner: "", repo: "", number: pr[1], url: "" };
+  const iss = item.match(/^issue[\s#-]*([0-9]+)$/i);
+  if (iss) return { kind: "issue", owner: "", repo: "", number: iss[1], url: "" };
+
+  // Bare number / "#614" — could be either; resolveKind() decides.
+  const num = item.match(/^#?([0-9]+)$/);
+  if (num) return { kind: "unknown", owner: "", repo: "", number: num[1], url: "" };
+
+  // Otherwise treat it as a remote branch name to import (e.g. "feature/login"
+  // or "origin/feature/login").
+  if (/^[\w.][\w.\-/]*$/.test(item)) {
+    return { kind: "branch", owner: "", repo: "", number: "", url: "", branch: item.replace(/^origin\//, "") };
+  }
   return null;
+}
+
+// A given number is an issue OR a PR, never both, so a successful `gh pr view`
+// is conclusive. Used only for the ambiguous bare-number case.
+function resolveKind(ref, cwd) {
+  if (ref.kind !== "unknown") return ref.kind;
+  const args = ["pr", "view", ref.number, "--json", "number"];
+  if (ref.owner && ref.repo) args.push("--repo", `${ref.owner}/${ref.repo}`);
+  const probe = run("gh", args, { cwd });
+  return probe.status === 0 ? "pr" : "issue";
 }
 
 // Pull issue content. When owner/repo are known use --repo; otherwise rely on
@@ -162,6 +204,26 @@ function fetchIssue(ref, cwd) {
     body: data.body || "",
     labels: Array.isArray(data.labels) ? data.labels.map((l) => l.name).filter(Boolean) : [],
     url: data.url || ref.url || "",
+  };
+}
+
+// Pull PR metadata, including the head branch name we'll import.
+function fetchPr(ref, cwd) {
+  const args = ["pr", "view", ref.number, "--json", "number,title,body,url,headRefName,isCrossRepository"];
+  if (ref.owner && ref.repo) args.push("--repo", `${ref.owner}/${ref.repo}`);
+  const result = run("gh", args, { cwd });
+  if (result.error) throw new Error(`gh failed to start (is it installed?): ${result.error.message}`);
+  if (result.status !== 0) {
+    throw new Error(`gh pr view ${ref.number} failed: ${(result.stderr || result.stdout || "").trim()}`);
+  }
+  const data = JSON.parse(result.stdout);
+  return {
+    number: String(data.number),
+    title: data.title || "",
+    body: data.body || "",
+    url: data.url || ref.url || "",
+    headRefName: data.headRefName || "",
+    crossRepository: !!data.isCrossRepository,
   };
 }
 
@@ -287,6 +349,82 @@ function rootPaneOf(workspaceId) {
   return focused?.pane_id || null;
 }
 
+function branchExistsLocally(branch, cwd) {
+  return run("git", ["-C", cwd, "rev-parse", "--verify", "--quiet", `refs/heads/${branch}`]).status === 0;
+}
+
+// Make a local branch at the PR's head. `pull/<n>/head` is exposed on the base
+// repo's origin for every PR, so this works for fork PRs too without adding a
+// remote. If the branch already exists locally we leave it untouched (don't
+// clobber any local work) and just reuse it.
+function importPrBranch(pr, cwd) {
+  const branch = pr.headRefName || `pr-${pr.number}`;
+  if (branchExistsLocally(branch, cwd)) {
+    output.write(`  (local branch ${branch} already exists; reusing it)\n`);
+    return branch;
+  }
+  const fetch = run("git", ["-C", cwd, "fetch", "origin", `pull/${pr.number}/head:${branch}`]);
+  if (fetch.status !== 0) {
+    throw new Error(`git fetch pull/${pr.number}/head failed: ${(fetch.stderr || fetch.stdout || "").trim()}`);
+  }
+  return branch;
+}
+
+// Make a local branch tracking a raw remote branch name.
+function importRemoteBranch(branch, cwd) {
+  if (branchExistsLocally(branch, cwd)) {
+    output.write(`  (local branch ${branch} already exists; reusing it)\n`);
+    return branch;
+  }
+  const fetch = run("git", ["-C", cwd, "fetch", "origin", `${branch}:${branch}`]);
+  if (fetch.status !== 0) {
+    throw new Error(`git fetch origin ${branch} failed: ${(fetch.stderr || fetch.stdout || "").trim()}`);
+  }
+  return branch;
+}
+
+// Open an existing local branch as a worktree (used for imported PR/branch
+// flows; the issue flow uses `worktree create` to make a fresh branch instead).
+function openWorktree(branch, label, cwd) {
+  return runHerdrJson([
+    "worktree",
+    "open",
+    "--cwd",
+    cwd,
+    "--branch",
+    branch,
+    "--label",
+    label,
+    "--focus",
+    "--json",
+  ]);
+}
+
+// Shared tail: resolve the root pane, start the agent, seed it, and focus the
+// new workspace once the overlay closes. Used by all three kinds.
+function launchAgent({ response, branch, agent, config, seedTemplate, seedValues }) {
+  let { workspaceId, paneId } = extractIds(response);
+  if (!workspaceId) {
+    throw new Error(`worktree response had no workspace id. Raw: ${JSON.stringify(response.result || response)}`);
+  }
+  if (!paneId) paneId = rootPaneOf(workspaceId);
+  if (!paneId) throw new Error(`could not resolve a root pane for workspace ${workspaceId}`);
+
+  output.write(`Starting ${agent} in ${workspaceId}...\n`);
+  runHerdr(["pane", "rename", paneId, branch]);
+  runHerdr(["pane", "run", paneId, agentCommand(agent, config)]);
+  sleep(config.timing.afterAgentStartMs);
+
+  const seed = renderTemplate(seedTemplate, seedValues);
+  if (seed.trim()) {
+    runHerdr(["pane", "run", paneId, seed]);
+    sleep(config.timing.afterPromptMs);
+  }
+
+  focusWorkspaceAfterOverlayCloses(workspaceId, config.timing.afterOverlayCloseFocusMs);
+  output.write(`\nDone. ${agent} is running in ${workspaceId} on branch ${branch}.\n`);
+}
+
 // ---------------------------------------------------------------- main
 
 function normalizeAgent(value, config) {
@@ -302,32 +440,8 @@ function agentCommand(agent, config) {
   return Array.isArray(cmd) ? cmd.join(" ") : String(cmd || agent);
 }
 
-async function main() {
-  const config = loadConfig();
-  output.write("\x1b[2J\x1b[H");
-  output.write("GitHub Issue -> Worktree\n\n");
-
-  const cwd = context.workspace_cwd || context.focused_pane_cwd || process.env.PWD || process.cwd();
-  const rl = readline.createInterface({ input, output });
-  const agents = Object.keys(config.agents);
-  const defaultAgent = normalizeAgent(config.defaultAgent, config) || agents[0];
-
-  const rawItem = await rl.question("GitHub issue URL or number: ");
-  const ref = parseIssueRef(rawItem);
-  if (!ref) {
-    output.write("\nNot a recognizable issue reference. Cancelled.\n");
-    rl.close();
-    return;
-  }
-
-  let agent = "";
-  while (!agent) {
-    const answer = await rl.question(`Agent [${agents.join("/")}] (${defaultAgent}): `);
-    agent = !answer.trim() ? defaultAgent : normalizeAgent(answer, config);
-    if (!agent) output.write(`Type one of: ${agents.join(", ")}.\n`);
-  }
-  rl.close();
-
+// Issue -> draft fresh names, create a new branch + worktree, seed with the issue.
+function runIssueFlow(ref, agent, config, cwd) {
   output.write(`\nReading issue #${ref.number}...\n`);
   const issue = fetchIssue(ref, cwd);
 
@@ -351,32 +465,90 @@ async function main() {
     "--json",
   ];
   if (base) createArgs.push("--base", base);
-  const response = runHerdrJson(createArgs);
 
-  let { workspaceId, paneId } = extractIds(response);
-  if (!workspaceId) {
-    throw new Error(`worktree.create response had no workspace id. Raw: ${JSON.stringify(response.result || response)}`);
-  }
-  if (!paneId) paneId = rootPaneOf(workspaceId);
-  if (!paneId) throw new Error(`could not resolve a root pane for workspace ${workspaceId}`);
-
-  output.write(`Starting ${agent} in ${workspaceId}...\n`);
-  runHerdr(["pane", "rename", paneId, names.branch]);
-  runHerdr(["pane", "run", paneId, agentCommand(agent, config)]);
-  sleep(config.timing.afterAgentStartMs);
-
-  const seed = renderTemplate(config.promptTemplate, {
-    url: issue.url || ref.url,
-    title: issue.title,
-    number: issue.number,
+  launchAgent({
+    response: runHerdrJson(createArgs),
     branch: names.branch,
-    workspace: names.workspace,
+    agent,
+    config,
+    seedTemplate: config.promptTemplate,
+    seedValues: {
+      url: issue.url || ref.url,
+      title: issue.title,
+      number: issue.number,
+      branch: names.branch,
+      workspace: names.workspace,
+    },
   });
-  runHerdr(["pane", "run", paneId, seed]);
-  sleep(config.timing.afterPromptMs);
+}
 
-  focusWorkspaceAfterOverlayCloses(workspaceId, config.timing.afterOverlayCloseFocusMs);
-  output.write(`\nDone. ${agent} is running in ${workspaceId} on branch ${names.branch}.\n`);
+// PR -> import the existing (remote) head branch into a worktree, seed for review/dev.
+function runPrFlow(ref, agent, config, cwd) {
+  output.write(`\nReading pull request #${ref.number}...\n`);
+  const pr = fetchPr(ref, cwd);
+
+  output.write(`Importing PR head branch ${pr.headRefName || `pr-${pr.number}`}...\n`);
+  const branch = importPrBranch(pr, cwd);
+  const label = compactLabel(pr.title, branch);
+
+  output.write(`\nOpening worktree on ${branch}...\n`);
+  launchAgent({
+    response: openWorktree(branch, label, cwd),
+    branch,
+    agent,
+    config,
+    seedTemplate: config.prPromptTemplate,
+    seedValues: { url: pr.url || ref.url, title: pr.title, number: pr.number, branch, workspace: label },
+  });
+}
+
+// Raw branch name -> import the remote branch into a worktree.
+function runBranchFlow(ref, agent, config, cwd) {
+  output.write(`\nImporting remote branch ${ref.branch}...\n`);
+  const branch = importRemoteBranch(ref.branch, cwd);
+  const label = compactLabel(branch, branch);
+
+  output.write(`\nOpening worktree on ${branch}...\n`);
+  launchAgent({
+    response: openWorktree(branch, label, cwd),
+    branch,
+    agent,
+    config,
+    seedTemplate: config.branchPromptTemplate,
+    seedValues: { branch, workspace: label },
+  });
+}
+
+async function main() {
+  const config = loadConfig();
+  output.write("\x1b[2J\x1b[H");
+  output.write("GitHub Issue / PR -> Worktree\n\n");
+
+  const cwd = context.workspace_cwd || context.focused_pane_cwd || process.env.PWD || process.cwd();
+  const rl = readline.createInterface({ input, output });
+  const agents = Object.keys(config.agents);
+  const defaultAgent = normalizeAgent(config.defaultAgent, config) || agents[0];
+
+  const rawItem = await rl.question("GitHub issue/PR URL or number, or branch name: ");
+  const ref = parseRef(rawItem);
+  if (!ref) {
+    output.write("\nNot a recognizable issue/PR/branch reference. Cancelled.\n");
+    rl.close();
+    return;
+  }
+
+  let agent = "";
+  while (!agent) {
+    const answer = await rl.question(`Agent [${agents.join("/")}] (${defaultAgent}): `);
+    agent = !answer.trim() ? defaultAgent : normalizeAgent(answer, config);
+    if (!agent) output.write(`Type one of: ${agents.join(", ")}.\n`);
+  }
+  rl.close();
+
+  const kind = ref.kind === "unknown" ? resolveKind(ref, cwd) : ref.kind;
+  if (kind === "pr") return runPrFlow(ref, agent, config, cwd);
+  if (kind === "branch") return runBranchFlow(ref, agent, config, cwd);
+  return runIssueFlow(ref, agent, config, cwd);
 }
 
 main().catch((error) => {
