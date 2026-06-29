@@ -81,7 +81,11 @@ next_agent     = "prefix+."
 # --- Worktrees (custom) -----------------------------------------------------
 new_worktree    = "prefix+shift+g"   # create a new branch + checkout
 open_worktree   = "prefix+shift+o"   # list and open existing worktrees
-remove_worktree = "prefix+alt+d"     # delete a worktree checkout
+# remove_worktree (the built-in) is intentionally left UNBOUND: it calls
+# `worktree remove` without --force, so a worktree with uncommitted/untracked
+# changes (the usual state of an agent's checkout) refuses to delete and leaves
+# the directory behind. prefix+alt+d is rebound below to the worktree-remove
+# plugin, which force-removes after confirming when the checkout is dirty.
 
 # --- Navigate/goto overlay (already Vim hjkl; kept explicit) ----------------
 navigate_workspace_up   = "up"
@@ -196,15 +200,26 @@ type = "plugin_action"
 command = "copy-workspace-path.copy-path-workspace"
 description = "copy workspace path (yank)"
 
-# github-issue-worktree: paste a GitHub issue, let claude draft branch/workspace
-# names from the issue content, then create a worktree + branch and launch an
-# agent in it. Pairs with new_worktree (prefix+shift+g): same "g" family, but
-# this one seeds the checkout from an issue. i = issue.
+# github-issue-worktree: paste an issue, a PR, or a branch name — the plugin
+# auto-detects which. Issue -> claude drafts branch/workspace names and a new
+# branch + worktree is created. PR/branch -> the existing remote branch is
+# imported into a worktree. Pairs with new_worktree (prefix+shift+g): same "g"
+# family, but this one seeds the checkout from GitHub. i = issue/import.
 [[keys.command]]
 key = "prefix+shift+i"
 type = "plugin_action"
 command = "github-issue-worktree.start"
-description = "start worktree from github issue"
+description = "start worktree from github issue/PR"
+
+# worktree-remove: delete the FOCUSED worktree and actually remove its directory.
+# Replaces the built-in remove_worktree (which never forces, so dirty checkouts
+# survive). Clean -> removed immediately; dirty -> a confirmation overlay lists
+# the uncommitted changes and force-removes only after you confirm.
+[[keys.command]]
+key = "prefix+alt+d"
+type = "plugin_action"
+command = "worktree-remove.start"
+description = "remove focused worktree (force-aware)"
 
 [theme]
 name = "tokyo-night"

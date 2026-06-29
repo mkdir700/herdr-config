@@ -22,11 +22,16 @@ plugins/tuicr-diff/                 # Local plugin: review git diffs via tuicr (
 plugins/copy-workspace-path/        # Local plugin: "Copy path" (prefix+y) — copy focused workspace/tab/pane cwd
   herdr-plugin.toml
   scripts/copy-path.sh              #   resolve the focused item's cwd, copy to clipboard
-plugins/github-issue-worktree/      # Local plugin: issue → worktree (prefix+shift+i), names drafted by claude
+plugins/github-issue-worktree/      # Local plugin: issue/PR/branch → worktree (prefix+shift+i)
   herdr-plugin.toml
-  config.example.json               #   default agent, base ref, prompt template
+  config.example.json               #   default agent, base ref, prompt templates
   scripts/open.js                   #   action entrypoint: open the overlay prompt
-  scripts/prompt.js                 #   read issue, draft names, create worktree, launch agent
+  scripts/prompt.js                 #   detect issue/PR/branch, create or import worktree, launch agent
+plugins/worktree-remove/            # Local plugin: force-aware worktree delete (prefix+alt+d)
+  herdr-plugin.toml
+  scripts/remove.js                 #   action: clean -> remove; dirty -> open confirm overlay
+  scripts/confirm.js                #   overlay: list changes, confirm, force-remove
+  scripts/lib.js                    #   shared: resolve focused worktree, dirty check, remove
 plugins/lazygit/                    # Local plugin: lazygit in a tab (prefix+v) — idempotent open/focus/close
   herdr-plugin.toml
   scripts/launch.sh                 #   idempotent open/focus/close launcher (single tab instance)
@@ -251,19 +256,38 @@ Requires `jq` on `PATH`. Menu-only — no keybinding. Built for Herdr **0.7.0+**
 
 ## Plugin: github-issue-worktree
 
-A local Herdr plugin that starts work **from a GitHub issue** — but instead of
-just naming a tab after the issue number (what the marketplace `github-start`
-plugin does), it reads the issue's **content** and uses it to name a real **git
-worktree + branch**, then launches an agent inside that checkout.
+A local Herdr plugin that starts work **from a GitHub issue, a PR, or a branch
+name** — all behind one overlay (`prefix+shift+i`). It **auto-detects** what you
+paste and picks the right strategy: an **issue** gets a brand-new branch +
+worktree (with names drafted from the issue content); a **PR** or a raw
+**branch name** has its existing **remote** branch imported into a worktree. An
+agent is launched inside the checkout either way.
 
 ### Why not `github-start`
 
 `github-start` creates a *tab* with a mechanical `gh-issue-614` label, never
 reads the issue body, and never touches git worktrees. This plugin reads the
 issue, drafts meaningful names from it, and creates an isolated worktree — so
-each issue gets its own branch and checkout, ready for parallel agent work.
+each issue gets its own branch and checkout, ready for parallel agent work. It
+also imports existing PR/remote branches, which `github-start` does not do.
 
-### Flow (`prefix+shift+i`)
+### Input detection
+
+The overlay accepts any of these and routes accordingly:
+
+| Input | Detected as | What happens |
+| --- | --- | --- |
+| issue URL, `issue 614` | issue | new branch, claude-named (flow below) |
+| PR URL, `pr 614` / `pull 614` | PR | import the PR's remote head branch |
+| `#614` / `614` (bare number) | probed via `gh pr view` | PR if it's a PR, else issue |
+| `feature/login`, `origin/feature/login` | branch | import that remote branch |
+
+PR and branch imports use `git fetch` (PRs via `pull/<n>/head`, so fork PRs work
+too without adding a remote), keep the **original branch name**, then
+`herdr worktree open --branch <name>` checks it out into a worktree. An existing
+local branch of the same name is reused, never clobbered.
+
+### Issue flow (`prefix+shift+i`)
 
 1. Paste an issue URL / `#614` / `issue 614` in the overlay, pick an agent.
 2. `gh issue view` pulls the title, body, and labels.
@@ -290,7 +314,9 @@ agent's working dir) exists. Tune or disable it in `config.json`:
 | `defaultAgent`    | `claude` or `codex` (the interactive agent started in the worktree) |
 | `baseRef`         | branch off this ref; empty = auto-detect the repo default (`origin/HEAD`, else `main`/`master`/`develop`) |
 | `namingModel`     | model for the naming call (empty = your `claude` default) |
-| `promptTemplate`  | seed prompt; `{url}` `{title}` `{number}` `{branch}` `{workspace}` |
+| `promptTemplate`  | issue seed prompt; `{url}` `{title}` `{number}` `{branch}` `{workspace}` |
+| `prPromptTemplate` | PR seed prompt (import flow); same placeholders |
+| `branchPromptTemplate` | raw-branch seed prompt; `{branch}` `{workspace}` |
 
 Config seeds from `config.example.json` on first run. Find it with:
 
@@ -302,12 +328,38 @@ herdr plugin config-dir github-issue-worktree
 
 | Key | Action |
 | --- | ------ |
-| `prefix+shift+i` | start a worktree from a GitHub issue (`i` = issue) |
+| `prefix+shift+i` | start a worktree from a GitHub issue/PR/branch (`i` = issue/import) |
 
 Pairs with the built-in `new_worktree` (`prefix+shift+g`) — same "g/i" worktree
-family, but this one seeds the checkout from an issue. Requires `gh`
-(authenticated) and `node` 18+ on `PATH`; `claude` is optional (naming only).
-Built for Herdr **0.7.0+**.
+family, but this one seeds the checkout from GitHub. Requires `gh`
+(authenticated) and `node` 18+ on `PATH`; `claude` is optional (issue naming
+only — PR/branch imports don't use it). Built for Herdr **0.7.0+**.
+
+## Plugin: worktree-remove
+
+A local Herdr plugin that removes the **focused** worktree *and actually deletes
+its directory* — bound to `prefix+alt+d`, replacing the built-in
+`remove_worktree`.
+
+### Why not the built-in
+
+The built-in `remove_worktree` calls `herdr worktree remove` **without
+`--force`**. A worktree with uncommitted/untracked changes (or git submodules)
+is "dirty", so git refuses to delete it and herdr returns
+`dirty_worktree_requires_force` — leaving the checkout **directory on disk**.
+Because a worktree is the agent's working dir, it's almost always dirty, so the
+built-in key looks like it does nothing.
+
+### Behaviour (`prefix+alt+d`)
+
+Targets the focused worktree (resolved from `herdr workspace list`):
+
+- **clean** → removed immediately, headless, with a notification.
+- **dirty** → opens a confirmation overlay listing the uncommitted/untracked
+  changes; force-removes (discarding them) only after you type `y`.
+- **main checkout / non-worktree** → refuses, with a notification.
+
+No config. Requires `node` 18+ and `git` on `PATH`. Built for Herdr **0.7.0+**.
 
 ## Plugin: lazygit
 
