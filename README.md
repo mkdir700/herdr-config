@@ -12,9 +12,6 @@ state (sockets, logs, session, plugin runtime copies) is intentionally
 ```
 config.toml                         # Herdr settings (UI, worktrees, keybindings)
 scripts/link-local-plugins.sh       # Re-link all local plugins (run after cloning)
-plugins/superset-bootstrap/         # Local plugin: reuse .superset/config.json for worktrees
-  herdr-plugin.toml
-  hook.sh
 plugins/tuicr-diff/                 # Local plugin: review git diffs via tuicr (terminal code-review TUI)
   herdr-plugin.toml
   scripts/launch.sh                 #   idempotent open/focus/close launcher
@@ -104,56 +101,6 @@ new_worktree    = "prefix+shift+g"
 open_worktree   = "prefix+shift+o"
 remove_worktree = "prefix+alt+d"
 ```
-
-## Plugin: superset-bootstrap
-
-A local Herdr plugin that bootstraps and tears down git worktrees by **reusing a
-repository's existing `.superset/config.json`** — no separate Herdr-specific
-config file is needed.
-
-### `.superset/config.json`
-
-Place this at the **main repo root** of any project you want bootstrapped:
-
-```json
-{
-  "setup": ["git submodule update --init --recursive", "bun install"],
-  "teardown": ["docker compose down"]
-}
-```
-
-- `setup` — commands run **inside the new worktree checkout** when it is created.
-- `teardown` — commands run when the worktree is removed.
-
-### How it works
-
-| Herdr event        | Action                                                            |
-| ------------------ | ----------------------------------------------------------------- |
-| `worktree.created` | Run `setup` in the new checkout (CLI/API path).                   |
-| `workspace.focused`| Backstop for worktrees created via the UI (which does not emit `worktree.created`). Idempotent via a state marker, so `setup` runs only once per checkout. |
-| `worktree.removed` | Run `teardown`.                                                   |
-
-The plugin reads the repo's `.superset/config.json`, resolves the main repo root
-from the event/context payload, and runs each command in order. Failures are
-logged and do not abort the remaining commands. Inspect runs with:
-
-```bash
-herdr plugin log list --plugin superset-bootstrap
-```
-
-### Caveats
-
-- **`teardown` runs *after* the checkout folder is deleted.** Herdr fires
-  `worktree.removed` once `git worktree remove` has already removed the
-  directory, and that event carries no repo root. The plugin stashes the main
-  repo root in its setup marker to locate the config later, and runs `teardown`
-  from the main repo root. So `teardown` is for cleaning up **external** resources
-  (containers, volumes, caches) — not files inside the (now gone) worktree. The
-  command receives `$SUPERSET_WORKTREE_PATH` and `$SUPERSET_WORKTREE_BRANCH` to
-  identify the removed checkout.
-- Removing a worktree that contains git submodules requires `--force`:
-  `herdr worktree remove --workspace <id> --force`.
-- Requires `jq`. Built for Herdr **0.7.0+**.
 
 ## Plugin: tuicr-diff
 
@@ -443,16 +390,23 @@ machine with the commands below.
 | [`smarzban/herdr-file-viewer`](https://github.com/smarzban/herdr-file-viewer) | Git-aware read-only file viewer TUI (tree + diff/markdown/syntax in a split pane) | `cargo` (builds on install) |
 | [`paulbkim-dev/vim-herdr-navigation`](https://github.com/paulbkim-dev/vim-herdr-navigation) | Seamless `Ctrl+h/j/k/l` navigation across Herdr panes and Vim/Neovim splits | `bash` |
 | [`ogulcancelik/herdr-plugin-github-start`](https://github.com/ogulcancelik/herdr-plugin-github-start) | Start Claude/Codex from a GitHub issue, PR, or discussion | `node` |
+| [`mkdir700/herdr-plugin-superset-bootstrap`](https://github.com/mkdir700/herdr-plugin-superset-bootstrap) | Run a repo's `.superset/config.json` setup/teardown commands when a worktree is created or removed | `jq` |
 
 ```bash
 herdr plugin install smarzban/herdr-file-viewer --yes
 herdr plugin install paulbkim-dev/vim-herdr-navigation --yes
 herdr plugin install ogulcancelik/herdr-plugin-github-start --yes
+herdr plugin install mkdir700/herdr-plugin-superset-bootstrap --yes
 ```
 
 > `gh-pr` used to be installed from `wyattjoh/herdr-plugin-gh-pr`; it is now a
 > tracked local fork (`plugins/gh-pr/`, colored status dots) linked by
 > `link-local-plugins.sh`, so it is no longer a marketplace install.
+
+> `superset-bootstrap` used to be a tracked local plugin (`plugins/superset-bootstrap/`)
+> linked by `link-local-plugins.sh`; it is now split out into its own repo,
+> [`mkdir700/herdr-plugin-superset-bootstrap`](https://github.com/mkdir700/herdr-plugin-superset-bootstrap),
+> and installed like the other marketplace plugins above.
 
 > **`vim-herdr-navigation` needs two more steps** beyond `plugin install`:
 > 1. The `[[keys.command]]` bindings for `Ctrl+h/j/k/l` in `config.toml` — already
@@ -470,8 +424,8 @@ cd ~/.config/herdr
 ```
 
 `scripts/link-local-plugins.sh` links all the local plugins in one shot
-(`superset-bootstrap`, `tuicr-diff`, `copy-workspace-path`,
-`github-issue-worktree`, `lazygit`, `gh-pr`). The `plugins.json` link registry is machine-specific
+(`tuicr-diff`, `copy-workspace-path`, `github-issue-worktree`, `lazygit`,
+`gh-pr`, `worktree-remove`). The `plugins.json` link registry is machine-specific
 and not tracked, so it has to be rebuilt on every new machine — run this script
 after cloning. If a plugin keybinding ever does nothing and
 `herdr plugin action invoke ...` returns `plugin_not_found`, the registry was
