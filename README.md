@@ -19,11 +19,6 @@ plugins/tuicr-diff/                 # Local plugin: review git diffs via tuicr (
 plugins/copy-workspace-path/        # Local plugin: "Copy path" (prefix+y) — copy focused workspace/tab/pane cwd
   herdr-plugin.toml
   scripts/copy-path.sh              #   resolve the focused item's cwd, copy to clipboard
-plugins/worktree-remove/            # Local plugin: force-aware worktree delete (prefix+alt+d)
-  herdr-plugin.toml
-  scripts/remove.js                 #   action: clean -> remove; dirty -> open confirm overlay
-  scripts/confirm.js                #   overlay: list changes, confirm, force-remove
-  scripts/lib.js                    #   shared: resolve focused worktree, dirty check, remove
 plugins/lazygit/                    # Local plugin: lazygit in a tab (prefix+v) — idempotent open/focus/close
   herdr-plugin.toml
   scripts/launch.sh                 #   idempotent open/focus/close launcher (single tab instance)
@@ -196,32 +191,6 @@ fires a best-effort top-right toast (visible only when `ui.toast.delivery =
 
 Requires `jq` on `PATH`. Menu-only — no keybinding. Built for Herdr **0.7.0+**.
 
-## Plugin: worktree-remove
-
-A local Herdr plugin that removes the **focused** worktree *and actually deletes
-its directory* — bound to `prefix+alt+d`, replacing the built-in
-`remove_worktree`.
-
-### Why not the built-in
-
-The built-in `remove_worktree` calls `herdr worktree remove` **without
-`--force`**. A worktree with uncommitted/untracked changes (or git submodules)
-is "dirty", so git refuses to delete it and herdr returns
-`dirty_worktree_requires_force` — leaving the checkout **directory on disk**.
-Because a worktree is the agent's working dir, it's almost always dirty, so the
-built-in key looks like it does nothing.
-
-### Behaviour (`prefix+alt+d`)
-
-Targets the focused worktree (resolved from `herdr workspace list`):
-
-- **clean** → removed immediately, headless, with a notification.
-- **dirty** → opens a confirmation overlay listing the uncommitted/untracked
-  changes; force-removes (discarding them) only after you type `y`.
-- **main checkout / non-worktree** → refuses, with a notification.
-
-No config. Requires `node` 18+ and `git` on `PATH`. Built for Herdr **0.7.0+**.
-
 ## Plugin: lazygit
 
 A local Herdr plugin that opens **[lazygit](https://github.com/jesseduffield/lazygit)**
@@ -305,14 +274,14 @@ machine with the commands below.
 | [`paulbkim-dev/vim-herdr-navigation`](https://github.com/paulbkim-dev/vim-herdr-navigation) | Seamless `Ctrl+h/j/k/l` navigation across Herdr panes and Vim/Neovim splits | `bash` |
 | [`ogulcancelik/herdr-plugin-github-start`](https://github.com/ogulcancelik/herdr-plugin-github-start) | Start Claude/Codex from a GitHub issue, PR, or discussion | `node` |
 | [`mkdir700/herdr-plugin-superset-bootstrap`](https://github.com/mkdir700/herdr-plugin-superset-bootstrap) | Run a repo's `.superset/config.json` setup/teardown commands when a worktree is created or removed | `jq` |
-| [`mkdir700/herdr-plugin-github-issue-worktree`](https://github.com/mkdir700/herdr-plugin-github-issue-worktree) | Start a git worktree from a GitHub issue (new branch, claude-named), a PR, or a raw branch name — auto-detected | `gh`, `node` |
+| [`mkdir700/herdr-plugin-worktree`](https://github.com/mkdir700/herdr-plugin-worktree) | Full worktree lifecycle: `create` from a GitHub issue/PR/branch (claude-named), force-aware `remove` of the focused worktree | `gh`, `git`, `node` |
 
 ```bash
 herdr plugin install smarzban/herdr-file-viewer --yes
 herdr plugin install paulbkim-dev/vim-herdr-navigation --yes
 herdr plugin install ogulcancelik/herdr-plugin-github-start --yes
 herdr plugin install mkdir700/herdr-plugin-superset-bootstrap --yes
-herdr plugin install mkdir700/herdr-plugin-github-issue-worktree --yes
+herdr plugin install mkdir700/herdr-plugin-worktree --yes
 ```
 
 > `gh-pr` used to be installed from `wyattjoh/herdr-plugin-gh-pr`; it is now a
@@ -324,13 +293,15 @@ herdr plugin install mkdir700/herdr-plugin-github-issue-worktree --yes
 > [`mkdir700/herdr-plugin-superset-bootstrap`](https://github.com/mkdir700/herdr-plugin-superset-bootstrap),
 > and installed like the other marketplace plugins above.
 
-> `github-issue-worktree` used to be a tracked local plugin
-> (`plugins/github-issue-worktree/`) linked by `link-local-plugins.sh`; it is
-> now split out into its own repo,
-> [`mkdir700/herdr-plugin-github-issue-worktree`](https://github.com/mkdir700/herdr-plugin-github-issue-worktree),
+> `github-issue-worktree` and `worktree-remove` used to be two separate
+> tracked local plugins (`plugins/github-issue-worktree/`,
+> `plugins/worktree-remove/`) linked by `link-local-plugins.sh`; they've since
+> been merged into one plugin — two actions covering the full worktree
+> lifecycle — split out into its own repo,
+> [`mkdir700/herdr-plugin-worktree`](https://github.com/mkdir700/herdr-plugin-worktree),
 > and installed like the other marketplace plugins above. The `prefix+shift+i`
-> keybinding in `config.toml` is unaffected — it still calls
-> `github-issue-worktree.start`.
+> / `prefix+shift+d` keybindings in `config.toml` now call `worktree.create` /
+> `worktree.remove`.
 
 > **`vim-herdr-navigation` needs two more steps** beyond `plugin install`:
 > 1. The `[[keys.command]]` bindings for `Ctrl+h/j/k/l` in `config.toml` — already
@@ -348,7 +319,7 @@ cd ~/.config/herdr
 ```
 
 `scripts/link-local-plugins.sh` links all the local plugins in one shot
-(`tuicr-diff`, `copy-workspace-path`, `lazygit`, `gh-pr`, `worktree-remove`).
+(`tuicr-diff`, `copy-workspace-path`, `lazygit`, `gh-pr`).
 The `plugins.json` link registry is machine-specific
 and not tracked, so it has to be rebuilt on every new machine — run this script
 after cloning. If a plugin keybinding ever does nothing and
