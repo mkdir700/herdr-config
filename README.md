@@ -19,11 +19,6 @@ plugins/tuicr-diff/                 # Local plugin: review git diffs via tuicr (
 plugins/copy-workspace-path/        # Local plugin: "Copy path" (prefix+y) — copy focused workspace/tab/pane cwd
   herdr-plugin.toml
   scripts/copy-path.sh              #   resolve the focused item's cwd, copy to clipboard
-plugins/github-issue-worktree/      # Local plugin: issue/PR/branch → worktree (prefix+shift+i)
-  herdr-plugin.toml
-  config.example.json               #   default agent, base ref, prompt templates
-  scripts/open.js                   #   action entrypoint: open the overlay prompt
-  scripts/prompt.js                 #   detect issue/PR/branch, create or import worktree, launch agent
 plugins/worktree-remove/            # Local plugin: force-aware worktree delete (prefix+alt+d)
   herdr-plugin.toml
   scripts/remove.js                 #   action: clean -> remove; dirty -> open confirm overlay
@@ -201,87 +196,6 @@ fires a best-effort top-right toast (visible only when `ui.toast.delivery =
 
 Requires `jq` on `PATH`. Menu-only — no keybinding. Built for Herdr **0.7.0+**.
 
-## Plugin: github-issue-worktree
-
-A local Herdr plugin that starts work **from a GitHub issue, a PR, or a branch
-name** — all behind one overlay (`prefix+shift+i`). It **auto-detects** what you
-paste and picks the right strategy: an **issue** gets a brand-new branch +
-worktree (with names drafted from the issue content); a **PR** or a raw
-**branch name** has its existing **remote** branch imported into a worktree. An
-agent is launched inside the checkout either way.
-
-### Why not `github-start`
-
-`github-start` creates a *tab* with a mechanical `gh-issue-614` label, never
-reads the issue body, and never touches git worktrees. This plugin reads the
-issue, drafts meaningful names from it, and creates an isolated worktree — so
-each issue gets its own branch and checkout, ready for parallel agent work. It
-also imports existing PR/remote branches, which `github-start` does not do.
-
-### Input detection
-
-The overlay accepts any of these and routes accordingly:
-
-| Input | Detected as | What happens |
-| --- | --- | --- |
-| issue URL, `issue 614` | issue | new branch, claude-named (flow below) |
-| PR URL, `pr 614` / `pull 614` | PR | import the PR's remote head branch |
-| `#614` / `614` (bare number) | probed via `gh pr view` | PR if it's a PR, else issue |
-| `feature/login`, `origin/feature/login` | branch | import that remote branch |
-
-PR and branch imports use `git fetch` (PRs via `pull/<n>/head`, so fork PRs work
-too without adding a remote), keep the **original branch name**, then
-`herdr worktree open --branch <name>` checks it out into a worktree. An existing
-local branch of the same name is reused, never clobbered.
-
-### Issue flow (`prefix+shift+i`)
-
-1. Paste an issue URL / `#614` / `issue 614` in the overlay, pick an agent.
-2. `gh issue view` pulls the title, body, and labels.
-3. `claude -p` drafts `{ branch, workspace }` from that content — e.g.
-   `614-fix-login-redirect` + a short workspace label. Falls back to a
-   deterministic `issue-<n>-<title-slug>` if `claude` is missing or the output
-   can't be parsed (naming never blocks the flow).
-4. `herdr worktree create --branch <branch> --label <workspace>` makes the
-   worktree, **branched off the repo's default branch** (auto-detected — not
-   whatever branch you happened to trigger from). This fires `worktree.created`,
-   so the **superset-bootstrap** plugin auto-runs the repo's `setup` in the
-   fresh checkout.
-5. The chosen agent starts in the worktree's root pane, seeded with a prompt
-   pointing at the issue.
-
-### Naming
-
-The "agent drafts the names" step is a single non-interactive `claude -p` call,
-not a full interactive agent — names must be decided *before* the worktree (the
-agent's working dir) exists. Tune or disable it in `config.json`:
-
-| Key | Effect |
-| --- | ------ |
-| `defaultAgent`    | `claude` or `codex` (the interactive agent started in the worktree) |
-| `baseRef`         | branch off this ref; empty = auto-detect the repo default (`origin/HEAD`, else `main`/`master`/`develop`) |
-| `namingModel`     | model for the naming call (empty = your `claude` default) |
-| `promptTemplate`  | issue seed prompt; `{url}` `{title}` `{number}` `{branch}` `{workspace}` |
-| `prPromptTemplate` | PR seed prompt (import flow); same placeholders |
-| `branchPromptTemplate` | raw-branch seed prompt; `{branch}` `{workspace}` |
-
-Config seeds from `config.example.json` on first run. Find it with:
-
-```bash
-herdr plugin config-dir github-issue-worktree
-```
-
-### Keybinding (tracked in `config.toml`)
-
-| Key | Action |
-| --- | ------ |
-| `prefix+shift+i` | start a worktree from a GitHub issue/PR/branch (`i` = issue/import) |
-
-Pairs with the built-in `new_worktree` (`prefix+shift+g`) — same "g/i" worktree
-family, but this one seeds the checkout from GitHub. Requires `gh`
-(authenticated) and `node` 18+ on `PATH`; `claude` is optional (issue naming
-only — PR/branch imports don't use it). Built for Herdr **0.7.0+**.
-
 ## Plugin: worktree-remove
 
 A local Herdr plugin that removes the **focused** worktree *and actually deletes
@@ -391,12 +305,14 @@ machine with the commands below.
 | [`paulbkim-dev/vim-herdr-navigation`](https://github.com/paulbkim-dev/vim-herdr-navigation) | Seamless `Ctrl+h/j/k/l` navigation across Herdr panes and Vim/Neovim splits | `bash` |
 | [`ogulcancelik/herdr-plugin-github-start`](https://github.com/ogulcancelik/herdr-plugin-github-start) | Start Claude/Codex from a GitHub issue, PR, or discussion | `node` |
 | [`mkdir700/herdr-plugin-superset-bootstrap`](https://github.com/mkdir700/herdr-plugin-superset-bootstrap) | Run a repo's `.superset/config.json` setup/teardown commands when a worktree is created or removed | `jq` |
+| [`mkdir700/herdr-plugin-github-issue-worktree`](https://github.com/mkdir700/herdr-plugin-github-issue-worktree) | Start a git worktree from a GitHub issue (new branch, claude-named), a PR, or a raw branch name — auto-detected | `gh`, `node` |
 
 ```bash
 herdr plugin install smarzban/herdr-file-viewer --yes
 herdr plugin install paulbkim-dev/vim-herdr-navigation --yes
 herdr plugin install ogulcancelik/herdr-plugin-github-start --yes
 herdr plugin install mkdir700/herdr-plugin-superset-bootstrap --yes
+herdr plugin install mkdir700/herdr-plugin-github-issue-worktree --yes
 ```
 
 > `gh-pr` used to be installed from `wyattjoh/herdr-plugin-gh-pr`; it is now a
@@ -407,6 +323,14 @@ herdr plugin install mkdir700/herdr-plugin-superset-bootstrap --yes
 > linked by `link-local-plugins.sh`; it is now split out into its own repo,
 > [`mkdir700/herdr-plugin-superset-bootstrap`](https://github.com/mkdir700/herdr-plugin-superset-bootstrap),
 > and installed like the other marketplace plugins above.
+
+> `github-issue-worktree` used to be a tracked local plugin
+> (`plugins/github-issue-worktree/`) linked by `link-local-plugins.sh`; it is
+> now split out into its own repo,
+> [`mkdir700/herdr-plugin-github-issue-worktree`](https://github.com/mkdir700/herdr-plugin-github-issue-worktree),
+> and installed like the other marketplace plugins above. The `prefix+shift+i`
+> keybinding in `config.toml` is unaffected — it still calls
+> `github-issue-worktree.start`.
 
 > **`vim-herdr-navigation` needs two more steps** beyond `plugin install`:
 > 1. The `[[keys.command]]` bindings for `Ctrl+h/j/k/l` in `config.toml` — already
@@ -424,8 +348,8 @@ cd ~/.config/herdr
 ```
 
 `scripts/link-local-plugins.sh` links all the local plugins in one shot
-(`tuicr-diff`, `copy-workspace-path`, `github-issue-worktree`, `lazygit`,
-`gh-pr`, `worktree-remove`). The `plugins.json` link registry is machine-specific
+(`tuicr-diff`, `copy-workspace-path`, `lazygit`, `gh-pr`, `worktree-remove`).
+The `plugins.json` link registry is machine-specific
 and not tracked, so it has to be rebuilt on every new machine — run this script
 after cloning. If a plugin keybinding ever does nothing and
 `herdr plugin action invoke ...` returns `plugin_not_found`, the registry was
