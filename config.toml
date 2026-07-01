@@ -6,6 +6,7 @@ show_agent_labels_on_pane_borders = true
 
 # Root directory for git worktree checkouts created from the sidebar/CLI.
 # Layout: <directory>/<repo>/<branch-slug>
+agent_panel_sort = "spaces"
 [worktrees]
 directory = "~/.herdr/worktrees"
 
@@ -222,8 +223,9 @@ command = "worktree-remove.start"
 description = "remove focused worktree (force-aware)"
 
 [theme]
-name = "tokyo-night"
+name = "dracula"
 
+auto_switch = false
 [ui.toast]
 delivery = "herdr"
 
