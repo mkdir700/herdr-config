@@ -8,7 +8,7 @@ show_agent_labels_on_pane_borders = true
 # Layout: <directory>/<repo>/<branch-slug>
 agent_panel_sort = "spaces"
 [worktrees]
-directory = "~/.herdr/worktrees"
+directory = "/Volumes/ExternalSSD/herdr/worktrees"
 
 # ============================================================================
 # Keybindings — aligned to LazyVim conventions for a Vim user.
@@ -232,7 +232,7 @@ command = "worktree.remove"
 description = "remove focused worktree (force-aware) / close workspace"
 
 [theme]
-name = "dracula"
+name = "terminal"
 
 auto_switch = false
 [ui.toast]
