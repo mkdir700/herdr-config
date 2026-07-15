@@ -5,15 +5,15 @@
 # no event hooks, nothing automatic. The viewer is transient: quitting lazygit
 # (`q`) exits the process so the tab disappears with it.
 #
-# Single instance, idempotent toggle (see scripts/launch.sh):
-#   no lazygit tab           -> open one (focused)
-#   lazygit tab, not focused -> switch to it
-#   already on the lazygit tab -> close it (toggle off)
+# One instance per workspace, idempotent toggle (see scripts/launch.sh):
+#   no lazygit tab in this workspace -> open one (focused)
+#   local lazygit tab, not focused   -> switch to it
+#   already on the local lazygit tab -> close it (toggle off)
 
 id = "lazygit"
 name = "lazygit"
 version = "0.1.0"
-description = "Open lazygit (terminal git UI) in a herdr tab — idempotent toggle: open / focus / close."
+description = "Open lazygit (terminal git UI) in a workspace-local herdr tab — idempotent toggle: open / focus / close."
 min_herdr_version = "0.7.0"
 platforms = ["linux", "macos"]
 
@@ -34,5 +34,5 @@ command = ["bash", "scripts/lazygit.sh"]
 [[actions]]
 id = "toggle"
 title = "lazygit (tab)"
-description = "Open lazygit in its own tab; focus it if it exists; close it if already focused."
+description = "Open lazygit in its own tab; focus it if it exists in this workspace; close it if already focused."
 command = ["bash", "scripts/launch.sh"]

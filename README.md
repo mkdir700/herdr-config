@@ -198,14 +198,14 @@ A local Herdr plugin that opens **[lazygit](https://github.com/jesseduffield/laz
 
 ### Behaviour
 
-A single lazygit instance lives in its own tab. The bound key (`prefix+v`) is an
-**idempotent toggle**, exactly like `tuicr-diff`'s tab variant:
+A workspace-local lazygit instance lives in its own tab. The bound key
+(`prefix+v`) is an **idempotent toggle**, exactly like `tuicr-diff`'s tab variant:
 
 | State when you press the key | What happens |
 | ---------------------------- | ------------ |
-| No lazygit tab               | open lazygit in a new tab (focused) |
-| lazygit tab exists, elsewhere | switch to that tab |
-| Already on the lazygit tab   | close it (toggle off) |
+| No lazygit tab in this workspace | open lazygit in a new tab (focused) |
+| lazygit tab exists elsewhere in this workspace | switch to that tab |
+| Already on this workspace's lazygit tab | close it (toggle off) |
 
 The viewer is **transient**: quitting lazygit (`q`) exits the process, so the tab
 disappears with it. lazygit runs in the focused pane's repo — the launcher hands
@@ -215,8 +215,8 @@ walks up to the enclosing git repo from there.
 ### How it works
 
 One pane entrypoint (`lazygit`, title `lazygit`) and one action (`toggle`). The
-launcher (`scripts/launch.sh`) keys its decision off the pane **label** in
-`herdr pane list` (so the single instance is found regardless of tab), and
+launcher (`scripts/launch.sh`) keys its decision off the pane **label** and
+workspace in `herdr pane list` (so the local instance is found across tabs), and
 ids pulled from the host JSON are validated flag-safe before reaching an argv
 (option-injection guard), mirroring the `tuicr-diff` launcher.
 

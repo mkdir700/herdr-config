@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Idempotent launcher for the lazygit plugin, invoked by the "toggle" action.
 #
-# Single instance in its own tab — "open-or-focus, toggle off when already on it":
+# One instance per workspace in its own tab — "open-or-focus, toggle off when already on it":
 #
-#   no lazygit pane anywhere        -> open it in a new tab (focused)
-#   lazygit pane in another tab     -> switch to that tab
+#   no lazygit pane in this workspace -> open it in a new tab (focused)
+#   lazygit pane in another local tab -> switch to that tab
 #   lazygit pane IS the focused pane -> close it (toggle off)
 #
 # herdr runs this from the plugin root. The repo to open is the focused pane's
@@ -32,6 +32,7 @@ is_flag_safe() {
 cur="$("$herdr_bin" pane current 2>/dev/null || true)"
 focused_pane="$(printf '%s' "$cur" | jq -r '.result.pane.pane_id // empty' 2>/dev/null || true)"
 focused_tab="$(printf '%s' "$cur" | jq -r '.result.pane.tab_id // empty' 2>/dev/null || true)"
+focused_workspace="$(printf '%s' "$cur" | jq -r '.result.pane.workspace_id // empty' 2>/dev/null || true)"
 repo="$(printf '%s' "$cur" | jq -r '.result.pane.foreground_cwd // .result.pane.cwd // empty' 2>/dev/null || true)"
 
 panes="$("$herdr_bin" pane list 2>/dev/null || true)"
@@ -69,11 +70,11 @@ if [ -n "$here_id" ] && is_flag_safe "$here_id"; then
   focus_pane "$here_id"
 fi
 
-# A lazygit pane living in another tab -> switch to it.
-if [ -n "$panes" ]; then
+# A lazygit pane living in another tab in this workspace -> switch to it.
+if [ -n "$focused_workspace" ] && [ -n "$panes" ]; then
   other_tab="$(printf '%s' "$panes" \
-    | jq -r --arg t "$title" \
-      'first(.result.panes[] | select(.label == $t) | .tab_id) // empty' \
+    | jq -r --arg t "$title" --arg workspace "$focused_workspace" \
+      'first(.result.panes[] | select(.label == $t and .workspace_id == $workspace) | .tab_id) // empty' \
     2>/dev/null || true)"
   if [ -n "$other_tab" ] && is_flag_safe "$other_tab"; then
     exec "$herdr_bin" tab focus "$other_tab"
