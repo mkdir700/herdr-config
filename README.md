@@ -249,6 +249,10 @@ existing agent tab.
 | `prefix+alt+p` | Pi |
 
 The prefix is `ctrl+b`, so for example `ctrl+b`, then `alt+c` opens Codex.
+Codex starts with `--dangerously-bypass-approvals-and-sandbox`, and Claude Code
+starts with `--dangerously-skip-permissions`; both launch without permission
+prompts or sandbox restrictions. Pi keeps its normal startup behavior.
+
 The plugin requires the selected executable to be on `PATH`; this machine has
 all three. Herdr recognizes the resulting processes automatically. Install the
 matching Herdr integrations when native session restore is wanted:

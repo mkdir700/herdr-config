@@ -4,7 +4,15 @@ set -euo pipefail
 
 agent="${1:-}"
 case "$agent" in
-codex | claude | pi) ;;
+codex)
+	command=(codex --dangerously-bypass-approvals-and-sandbox)
+	;;
+claude)
+	command=(claude --dangerously-skip-permissions)
+	;;
+pi)
+	command=(pi)
+	;;
 *)
 	printf 'unsupported agent: %s\n' "$agent" >&2
 	exit 64
@@ -18,4 +26,4 @@ if [ -z "$cwd" ] || [ ! -d "$cwd" ]; then
 fi
 
 cd "$cwd"
-exec "$agent"
+exec "${command[@]}"
