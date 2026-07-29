@@ -19,10 +19,13 @@ plugins/tuicr-diff/                 # Local plugin: review git diffs via tuicr (
 plugins/copy-workspace-path/        # Local plugin: "Copy path" (prefix+y) — copy focused workspace/tab/pane cwd
   herdr-plugin.toml
   scripts/copy-path.sh              #   resolve the focused item's cwd, copy to clipboard
-plugins/lazygit/                    # Local plugin: lazygit in a tab (prefix+v) — idempotent open/focus/close
+plugins/lazygit/                    # Local plugin: lazygit in a tab (prefix+v) - idempotent open/focus/close
   herdr-plugin.toml
   scripts/launch.sh                 #   idempotent open/focus/close launcher (single tab instance)
   scripts/lazygit.sh                #   pane wrapper: cd to repo, exec lazygit
+plugins/agent-launcher/             # Local plugin: Codex / Claude / Pi in new tabs
+  herdr-plugin.toml
+  scripts/open-tab.sh               #   starts the requested agent at the focused pane's cwd
 plugins/gh-pr/                      # Local fork: branch PR status in the sidebar, as a colored dot
   herdr-plugin.toml
   bin/                              #   update-pr-status.ts (labeler) / open-pr.ts (open in browser)
@@ -57,21 +60,21 @@ LazyVim's `<C-hjkl>`.
 
 | Scope | Key (after `ctrl+b`) | Action | LazyVim analog |
 | ----- | -------------------- | ------ | -------------- |
-| Pane  | `h` / `j` / `k` / `l` | focus left/down/up/right | `<C-hjkl>` |
-| Pane  | `-`                   | split below (stacked)    | `<leader>-` |
-| Pane  | `+`                   | split right (side by side) | `<leader>+` |
-| Pane  | `x` / `z` / `r`       | close / maximize / resize mode | `<leader>wd` / `wm` |
-| Pane  | `Tab` / `Shift+Tab`   | cycle next / previous panes | — |
-| Pane  | `Shift+p`             | rename pane | — |
-| Tab   | `[` / `]`             | previous / next tab | `<leader><tab>[` / `]` |
-| Tab   | `t` / `Shift+t` / `Shift+x` | new / rename / close tab | `<leader><tab><tab>` |
-| Tab   | `1`..`9`              | switch to tab N | — |
-| Wksp  | `w`                   | workspace picker | — |
-| Wksp  | `Shift+n` / `Shift+w` / `Shift+d` | new / rename / close workspace | — |
-| Wksp  | `Shift+1`..`Shift+9`  | switch to workspace N | — |
-| Wksp  | `{` / `}`             | previous / next workspace | — |
-| Agent | `,` / `.`             | previous / next agent (any workspace/tab) | — |
-| Misc  | `?` `s` `q` `g` `o` `e` `c` `b` | help / settings / detach / goto / notification / edit-scrollback / copy-mode / sidebar | — |
+| Pane | `h` / `j` / `k` / `l` | focus left/down/up/right | `<C-hjkl>` |
+| Pane | `-` | split below (stacked) | `<leader>-` |
+| Pane | `+` | split right (side by side) | `<leader>+` |
+| Pane | `x` / `z` / `r` | close / maximize / resize mode | `<leader>wd` / `wm` |
+| Pane | `Tab` / `Shift+Tab` | cycle next / previous panes | — |
+| Pane | `Shift+p` | rename pane | — |
+| Tab | `[` / `]` | previous / next tab | `<leader><tab>[` / `]` |
+| Tab | `t` / `Shift+t` / `Shift+x` | new / rename / close tab | `<leader><tab><tab>` |
+| Tab | `1`..`9` | switch to tab N | — |
+| Wksp | `w` | workspace picker | — |
+| Wksp | `Shift+n` / `Shift+w` / `Shift+d` | new / rename / close workspace | — |
+| Wksp | `Shift+1`..`Shift+9` | switch to workspace N | — |
+| Wksp | `{` / `}` | previous / next workspace | — |
+| Agent | `,` / `.` | previous / next agent (any workspace/tab) | — |
+| Misc | `?` `s` `q` `g` `o` `e` `c` `b` | help / settings / detach / goto / notification / edit-scrollback / copy-mode / sidebar | — |
 
 Notes:
 
@@ -103,7 +106,7 @@ then gets out of the way. No nvim involved.
 | Comparison | What it shows | tuicr command |
 | ---------- | ------------- | ------------- |
 | **working** | Uncommitted changes — working tree + index vs `HEAD` | `tuicr -w` |
-| **branch**  | The whole branch — `base...HEAD` (every commit since the fork point) | `tuicr -r <base>...HEAD` |
+| **branch** | The whole branch — `base...HEAD` (every commit since the fork point) | `tuicr -r <base>...HEAD` |
 
 The **base** for the branch comparison is auto-detected: `origin/HEAD`'s default
 branch, else the first of `main` / `master` / `develop` that exists. Override it
@@ -125,9 +128,9 @@ per repo with the `HERDR_DIFF_BASE` environment variable.
 
 | Key | Action |
 | --- | ------ |
-| `prefix+u`       | uncommitted (working tree) diff, split |
+| `prefix+u` | uncommitted (working tree) diff, split |
 | `prefix+shift+u` | uncommitted (working tree) diff, own tab |
-| `prefix+a`       | branch vs base diff, split |
+| `prefix+a` | branch vs base diff, split |
 | `prefix+shift+a` | branch vs base diff, own tab |
 
 These are chosen to be conflict-free with Herdr's default keybindings
@@ -167,8 +170,8 @@ falling back to the context JSON or the focused pane when an id is missing:
 | Level | What gets copied |
 | ----- | ---------------- |
 | **workspace** | cwd of the workspace's active pane |
-| **tab**       | cwd of the tab's active pane |
-| **pane**      | cwd of that pane |
+| **tab** | cwd of the tab's active pane |
+| **pane** | cwd of that pane |
 
 A workspace/tab has no path of its own — its "path" is the cwd Herdr tracks for
 its active pane, so that is what gets copied.
@@ -230,6 +233,31 @@ ids pulled from the host JSON are validated flag-safe before reaching an argv
 mnemonic for version-control. The obvious `g`/`shift+g` were already taken by
 `goto` / `new_worktree`. Requires [`lazygit`](https://github.com/jesseduffield/lazygit)
 and `jq` on `PATH`. Built for Herdr **0.7.0+**.
+
+## Plugin: agent-launcher
+
+A local launcher for opening a **fresh** Codex, Claude Code, or Pi session in a
+new tab. It starts the selected CLI in the focused pane's working directory, so
+it works from any repository or non-repository directory. Each shortcut always
+creates another session; it deliberately does not focus, resume, or close an
+existing agent tab.
+
+| Key | Agent |
+| --- | --- |
+| `prefix+alt+c` | Codex |
+| `prefix+alt+l` | Claude Code |
+| `prefix+alt+p` | Pi |
+
+The prefix is `ctrl+b`, so for example `ctrl+b`, then `alt+c` opens Codex.
+The plugin requires the selected executable to be on `PATH`; this machine has
+all three. Herdr recognizes the resulting processes automatically. Install the
+matching Herdr integrations when native session restore is wanted:
+
+```bash
+herdr integration install codex
+herdr integration install claude
+herdr integration install pi
+```
 
 ## Plugin: gh-pr (local fork)
 
@@ -304,6 +332,7 @@ herdr plugin install mkdir700/herdr-plugin-worktree --yes
 > `worktree.remove`.
 
 > **`vim-herdr-navigation` needs two more steps** beyond `plugin install`:
+>
 > 1. The `[[keys.command]]` bindings for `Ctrl+h/j/k/l` in `config.toml` — already
 >    tracked in this repo.
 > 2. The Neovim side, copied to `~/.config/nvim/after/plugin/herdr_nav.lua` from

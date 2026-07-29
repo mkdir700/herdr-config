@@ -1,0 +1,43 @@
+# Open a fresh coding-agent tab in the focused pane's working directory.
+id = "agent-launcher"
+name = "Agent Launcher"
+version = "0.1.0"
+description = "Start Codex, Claude Code, or Pi in a new Herdr tab."
+min_herdr_version = "0.7.0"
+platforms = ["linux", "macos"]
+
+[[panes]]
+id = "agent-codex"
+title = "Codex"
+placement = "tab"
+command = ["bash", "scripts/run-agent.sh", "codex"]
+
+[[panes]]
+id = "agent-claude"
+title = "Claude"
+placement = "tab"
+command = ["bash", "scripts/run-agent.sh", "claude"]
+
+[[panes]]
+id = "agent-pi"
+title = "Pi"
+placement = "tab"
+command = ["bash", "scripts/run-agent.sh", "pi"]
+
+[[actions]]
+id = "launch-codex"
+title = "Start Codex"
+description = "Open Codex in a new tab at the focused pane's working directory."
+command = ["bash", "scripts/open-tab.sh", "codex"]
+
+[[actions]]
+id = "launch-claude"
+title = "Start Claude"
+description = "Open Claude Code in a new tab at the focused pane's working directory."
+command = ["bash", "scripts/open-tab.sh", "claude"]
+
+[[actions]]
+id = "launch-pi"
+title = "Start Pi"
+description = "Open Pi in a new tab at the focused pane's working directory."
+command = ["bash", "scripts/open-tab.sh", "pi"]
