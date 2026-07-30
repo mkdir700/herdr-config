@@ -197,25 +197,14 @@ type = "plugin_action"
 command = "lazygit.toggle"
 description = "lazygit (tab toggle)"
 
-# agent-launcher: open a fresh agent tab in the focused pane's working directory.
-# C = Codex, L = Claude, P = Pi. These use the prefix to avoid intercepting CLI input.
+# agent-launcher: choose a coding agent in an overlay, then start it in a
+# fresh tab rooted at the focused pane's working directory. z is unmodified
+# after the prefix, so it works reliably through Windows WSL terminals.
 [[keys.command]]
-key = "prefix+alt+c"
+key = "prefix+z"
 type = "plugin_action"
-command = "agent-launcher.launch-codex"
-description = "start Codex (new tab)"
-
-[[keys.command]]
-key = "prefix+alt+l"
-type = "plugin_action"
-command = "agent-launcher.launch-claude"
-description = "start Claude (new tab)"
-
-[[keys.command]]
-key = "prefix+alt+p"
-type = "plugin_action"
-command = "agent-launcher.launch-pi"
-description = "start Pi (new tab)"
+command = "agent-launcher.launch"
+description = "choose coding agent (new tab)"
 
 # copy-workspace-path: copy the focused workspace's directory to the clipboard.
 # herdr 0.7.0's sidebar right-click menu is built-in and does NOT surface plugin

@@ -9,19 +9,54 @@ bin_dir="$tmp_dir/bin"
 workspace="$tmp_dir/workspace"
 mkdir -p "$bin_dir" "$workspace"
 
+cat >"$bin_dir/fzf" <<'EOF'
+#!/usr/bin/env bash
+if [ "${TEST_FZF_CANCEL:-}" = "1" ]; then
+	exit 130
+fi
+printf '%s\n' "${TEST_FZF_SELECTION:-codex}"
+EOF
+chmod +x "$bin_dir/fzf"
+
+picker_log="$tmp_dir/picker.log"
+HERDR_BIN_PATH="$repo_root/tests/fixtures/fake-herdr-agent-launcher.sh" \
+	TEST_COMMAND_LOG="$picker_log" \
+	bash "$repo_root/plugins/agent-launcher/scripts/open-picker.sh"
+expected="plugin pane open --plugin agent-launcher --entrypoint agent-picker --placement overlay --focus --env HERDR_AGENT_LAUNCHER_CWD=/tmp"
+actual="$(<"$picker_log")"
+if [ "$actual" != "$expected" ]; then
+	printf 'FAIL: unexpected picker command:\n%s\n' "$actual" >&2
+	exit 1
+fi
+
 for agent in codex claude pi; do
 	command_log="$tmp_dir/$agent.log"
 	HERDR_BIN_PATH="$repo_root/tests/fixtures/fake-herdr-agent-launcher.sh" \
+		HERDR_AGENT_LAUNCHER_CWD="$workspace" \
 		TEST_COMMAND_LOG="$command_log" \
-		bash "$repo_root/plugins/agent-launcher/scripts/open-tab.sh" "$agent"
+		TEST_FZF_SELECTION="$agent" \
+		PATH="$bin_dir:$PATH" \
+		bash "$repo_root/plugins/agent-launcher/scripts/pick-agent.sh"
 
-	expected="plugin pane open --plugin agent-launcher --entrypoint agent-$agent --placement tab --focus --env HERDR_AGENT_LAUNCHER_CWD=/tmp"
+	expected="plugin pane open --plugin agent-launcher --entrypoint agent-$agent --placement tab --focus --env HERDR_AGENT_LAUNCHER_CWD=$workspace"
 	actual="$(<"$command_log")"
 	if [ "$actual" != "$expected" ]; then
-		printf 'FAIL: unexpected %s launch command:\n%s\n' "$agent" "$actual" >&2
+		printf 'FAIL: unexpected %s picker selection:\n%s\n' "$agent" "$actual" >&2
 		exit 1
 	fi
 done
+
+cancel_log="$tmp_dir/cancel.log"
+HERDR_BIN_PATH="$repo_root/tests/fixtures/fake-herdr-agent-launcher.sh" \
+	HERDR_AGENT_LAUNCHER_CWD="$workspace" \
+	TEST_COMMAND_LOG="$cancel_log" \
+	TEST_FZF_CANCEL=1 \
+	PATH="$bin_dir:$PATH" \
+	bash "$repo_root/plugins/agent-launcher/scripts/pick-agent.sh"
+if [ -e "$cancel_log" ]; then
+	printf 'FAIL: canceled picker opened a tab:\n%s\n' "$(<"$cancel_log")" >&2
+	exit 1
+fi
 
 if bash "$repo_root/plugins/agent-launcher/scripts/open-tab.sh" unsupported >/dev/null 2>&1; then
 	printf 'FAIL: unsupported agent was accepted\n' >&2
@@ -63,4 +98,4 @@ for test_case in \
 	fi
 done
 
-printf 'PASS: agent launcher opens danger-mode Codex/Claude and default Pi tabs\n'
+printf 'PASS: agent picker opens a floating selector and starts the selected agent tab\n'

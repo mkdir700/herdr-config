@@ -244,14 +244,15 @@ existing agent tab.
 
 | Key | Agent |
 | --- | --- |
-| `prefix+alt+c` | Codex |
-| `prefix+alt+l` | Claude Code |
-| `prefix+alt+p` | Pi |
+| `prefix+z` | Open the agent picker |
 
-The prefix is `ctrl+b`, so for example `ctrl+b`, then `alt+c` opens Codex.
-Codex starts with `--dangerously-bypass-approvals-and-sandbox`, and Claude Code
-starts with `--dangerously-skip-permissions`; both launch without permission
-prompts or sandbox restrictions. Pi keeps its normal startup behavior.
+The prefix is `ctrl+b`, so `ctrl+b`, then `z` opens an overlay picker. This
+unmodified second key works reliably through Windows WSL terminals.
+Use the arrow keys and Enter to choose Codex, Claude Code, or Pi; press Esc to
+cancel. The chosen agent opens in a new tab rooted at the focused pane's working
+directory. Codex starts with `--dangerously-bypass-approvals-and-sandbox`, and
+Claude Code starts with `--dangerously-skip-permissions`; both launch without
+permission prompts or sandbox restrictions. Pi keeps its normal startup behavior.
 
 The plugin requires the selected executable to be on `PATH`; this machine has
 all three. Herdr recognizes the resulting processes automatically. Install the
