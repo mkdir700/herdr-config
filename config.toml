@@ -49,7 +49,8 @@ focus_pane_right    = "prefix+l"
 # If the two feel swapped on your setup, swap these two values.
 split_horizontal    = "prefix+minus"         # <leader>- split below (stacked)
 split_vertical      = "prefix+plus"          # <leader>+ split right (side by side)
-close_pane          = "prefix+x"             # delete window
+# Handled by tab-close-guard below so closing the workspace's final pane requires confirmation.
+close_pane = ""
 zoom                = "prefix+m"             # <leader>wm maximize/restore toggle (m = maximize)
 resize_mode         = "prefix+r"
 cycle_pane_next     = "prefix+tab"
@@ -61,7 +62,8 @@ new_tab      = "prefix+t"            # <leader><tab><tab> new tab
 previous_tab = "prefix+["            # <leader><tab>[  previous tab
 next_tab     = "prefix+]"            # <leader><tab>]  next tab
 rename_tab   = "prefix+shift+t"
-close_tab    = "prefix+shift+x"
+# Handled by tab-close-guard below so closing a workspace's final tab requires confirmation.
+close_tab = ""
 switch_tab   = "prefix+1..9"
 
 # --- Workspaces = projects / sessions ---------------------------------------
@@ -205,6 +207,25 @@ key = "prefix+z"
 type = "plugin_action"
 command = "agent-launcher.launch"
 description = "choose coding agent (new tab)"
+
+# tab-close-guard: replacement for the built-in close_tab. Multi-tab workspaces
+# close immediately; closing the only tab opens a confirmation overlay because it
+# also deletes the workspace.
+[[keys.command]]
+key = "prefix+shift+x"
+# Invoke through the Herdr CLI. This is the documented reliable path for
+# keybindings that trigger a plugin action.
+type = "shell"
+command = "herdr plugin action invoke close-tab --plugin tab-close-guard"
+description = "close tab (confirm when final tab)"
+
+# tab-close-guard: replacement for the built-in close_pane. A final pane in a
+# final tab would remove its workspace, so it uses the same confirmation overlay.
+[[keys.command]]
+key = "prefix+x"
+type = "shell"
+command = "herdr plugin action invoke close-pane --plugin tab-close-guard"
+description = "close pane (confirm when final pane)"
 
 # copy-workspace-path: copy the focused workspace's directory to the clipboard.
 # herdr 0.7.0's sidebar right-click menu is built-in and does NOT surface plugin

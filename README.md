@@ -26,6 +26,11 @@ plugins/lazygit/                    # Local plugin: lazygit in a tab (prefix+v) 
 plugins/agent-launcher/             # Local plugin: Codex / Claude / Pi in new tabs
   herdr-plugin.toml
   scripts/open-tab.sh               #   starts the requested agent at the focused pane's cwd
+plugins/tab-close-guard/            # Local plugin: confirm before closing a workspace's final tab/pane
+  herdr-plugin.toml
+  scripts/close-tab.js              #   closes immediately or opens confirmation overlay
+  scripts/close-pane.js             #   does the same when the final pane would remove a workspace
+  scripts/confirm.js                #   accepts y/yes before closing the captured workspace
 plugins/gh-pr/                      # Local fork: branch PR status in the sidebar, as a colored dot
   herdr-plugin.toml
   bin/                              #   update-pr-status.ts (labeler) / open-pr.ts (open in browser)
@@ -264,6 +269,29 @@ herdr integration install claude
 herdr integration install pi
 ```
 
+## Plugin: tab-close-guard
+
+A local guard for the two explicit close shortcuts:
+
+| Shortcut | Guarded operation |
+| --- | --- |
+| `prefix+shift+x` | Close tab. Confirmation is required for the workspace's only tab. |
+| `prefix+x` | Close pane. Confirmation is required only when it is the only pane in the workspace's only tab. |
+
+Other tabs or panes close immediately. A protected action captures the original
+target IDs before opening a terminal overlay; only `y` or `yes` closes the
+workspace, and any other input cancels it.
+
+Herdr plugin v1 has no cancellable pre-close or pre-exit hook, and its sidebar
+right-click menu is not plugin-extensible in 0.7.1. The guard therefore applies
+to the rebound shortcuts and direct actions, not mouse/menu close or a pane's
+natural process exit (for example, `exit`, `Ctrl+d`, or quitting Codex):
+
+```bash
+herdr plugin action invoke close-tab --plugin tab-close-guard
+herdr plugin action invoke close-pane --plugin tab-close-guard
+```
+
 ## Plugin: gh-pr (local fork)
 
 A local fork of [`wyattjoh/herdr-plugin-gh-pr`](https://github.com/wyattjoh/herdr-plugin-gh-pr)
@@ -353,7 +381,8 @@ cd ~/.config/herdr
 ```
 
 `scripts/link-local-plugins.sh` links all the local plugins in one shot
-(`tuicr-diff`, `copy-workspace-path`, `lazygit`, `gh-pr`).
+(`tuicr-diff`, `copy-workspace-path`, `lazygit`, `agent-launcher`,
+`tab-close-guard`, `gh-pr`).
 The `plugins.json` link registry is machine-specific
 and not tracked, so it has to be rebuilt on every new machine — run this script
 after cloning. If a plugin keybinding ever does nothing and

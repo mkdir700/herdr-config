@@ -1,0 +1,29 @@
+# Guard closing the final tab in a workspace. Herdr plugin v1 exposes no
+# pre-close hook, so config.toml binds prefix+shift+x to this action instead of
+# the built-in close_tab command.
+id = "tab-close-guard"
+name = "Tab Close Guard"
+version = "0.1.0"
+description = "Confirm before closing the final tab or final pane in a workspace."
+min_herdr_version = "0.7.0"
+platforms = ["linux", "macos"]
+
+[[actions]]
+id = "close-tab"
+title = "Close tab"
+description = "Close a tab immediately unless it is the workspace's final tab, which requires confirmation."
+contexts = ["workspace", "tab", "pane"]
+command = ["node", "scripts/close-tab.js"]
+
+[[actions]]
+id = "close-pane"
+title = "Close pane"
+description = "Close a pane immediately unless it is the workspace's final pane in its final tab, which requires confirmation."
+contexts = ["workspace", "tab", "pane"]
+command = ["node", "scripts/close-pane.js"]
+
+[[panes]]
+id = "confirm"
+title = "Close final tab?"
+placement = "overlay"
+command = ["node", "scripts/confirm.js"]
