@@ -30,64 +30,64 @@ directory = "/Volumes/ExternalSSD/herdr/worktrees"
 prefix = "ctrl+b"
 
 # --- Leader-level actions ---------------------------------------------------
-help                     = "prefix+?"        # <leader>? cheatsheet
-settings                 = "prefix+s"
-detach                   = "prefix+q"        # <leader>qq quit/detach
-reload_config            = "prefix+shift+r"
-goto                     = "prefix+g"
+help = "prefix+?"                     # <leader>? cheatsheet
+settings = "prefix+s"
+detach = "prefix+q"                   # <leader>qq quit/detach
+reload_config = "prefix+shift+r"
+goto = "prefix+g"
 open_notification_target = "prefix+o"
-edit_scrollback          = "prefix+e"        # edit pane scrollback in $EDITOR
-copy_mode                = "prefix+c"        # enter scrollback/copy mode (relocated off "[")
-toggle_sidebar           = "prefix+b"        # explorer-like sidebar (bar)
+edit_scrollback = "prefix+e"          # edit pane scrollback in $EDITOR
+copy_mode = "prefix+c"                # enter scrollback/copy mode (relocated off "[")
+toggle_sidebar = "prefix+b"           # explorer-like sidebar (bar)
 
 # --- Panes = nvim windows (splits) ------------------------------------------
-focus_pane_left     = "prefix+h"
-focus_pane_down     = "prefix+j"
-focus_pane_up       = "prefix+k"
-focus_pane_right    = "prefix+l"
+focus_pane_left = "prefix+h"
+focus_pane_down = "prefix+j"
+focus_pane_up = "prefix+k"
+focus_pane_right = "prefix+l"
 # LazyVim: <leader>- split below, <leader>| split right.
 # If the two feel swapped on your setup, swap these two values.
-split_horizontal    = "prefix+minus"         # <leader>- split below (stacked)
-split_vertical      = "prefix+plus"          # <leader>+ split right (side by side)
+split_horizontal = "prefix+minus" # <leader>- split below (stacked)
+split_vertical = "prefix+plus"    # <leader>+ split right (side by side)
 # Handled by tab-close-guard below so closing the workspace's final pane requires confirmation.
 close_pane = ""
-zoom                = "prefix+m"             # <leader>wm maximize/restore toggle (m = maximize)
-resize_mode         = "prefix+r"
-cycle_pane_next     = "prefix+tab"
+zoom = "prefix+m"                        # <leader>wm maximize/restore toggle (m = maximize)
+resize_mode = "prefix+r"
+cycle_pane_next = "prefix+tab"
 cycle_pane_previous = "prefix+shift+tab"
-rename_pane         = "prefix+shift+p"
+rename_pane = "prefix+shift+p"
 
 # --- Tabs = nvim tabs -------------------------------------------------------
-new_tab      = "prefix+t"            # <leader><tab><tab> new tab
-previous_tab = "prefix+["            # <leader><tab>[  previous tab
-next_tab     = "prefix+]"            # <leader><tab>]  next tab
-rename_tab   = "prefix+shift+t"
+new_tab = "prefix+t"          # <leader><tab><tab> new tab
+previous_tab = "prefix+["     # <leader><tab>[  previous tab
+next_tab = "prefix+]"         # <leader><tab>]  next tab
+rename_tab = "prefix+shift+t"
 # Handled by tab-close-guard below so closing a workspace's final tab requires confirmation.
 close_tab = ""
-switch_tab   = "prefix+1..9"
+switch_tab = "prefix+1..9"
 
 # --- Workspaces = projects / sessions ---------------------------------------
 workspace_picker = "prefix+w"
-new_workspace    = "prefix+shift+n"
+new_workspace = "prefix+shift+n"
 rename_workspace = "prefix+shift+w"
 # close_workspace is intentionally left UNBOUND (default is prefix+shift+d):
 # that key now belongs to the worktree plugin's remove action below, which
 # falls back to closing the workspace when it isn't a worktree — so "d = delete"
 # still works the same for plain workspaces, and also handles worktrees correctly.
-close_workspace  = ""
+close_workspace = ""
 switch_workspace = "prefix+shift+1..9"
 # prev/next workspace: { } mirror the tab [ ] bindings (outer container)
 previous_workspace = "prefix+{"
-next_workspace     = "prefix+}"
+next_workspace = "prefix+}"
 
 # --- Agents (cycle focus across agent panes, any workspace/tab) -------------
 # , / . = previous / next (Shift+hjkl is taken by swap_pane).
 previous_agent = "prefix+,"
-next_agent     = "prefix+."
+next_agent = "prefix+."
 
 # --- Worktrees (custom) -----------------------------------------------------
-new_worktree    = "prefix+shift+g"   # create a new branch + checkout
-open_worktree   = "prefix+shift+o"   # list and open existing worktrees
+new_worktree = "prefix+shift+g"  # create a new branch + checkout
+open_worktree = "prefix+shift+o" # list and open existing worktrees
 # remove_worktree (the built-in) is intentionally left UNBOUND: it calls
 # `worktree remove` without --force, so a worktree with uncommitted/untracked
 # changes (the usual state of an agent's checkout) refuses to delete and leaves
@@ -97,12 +97,12 @@ open_worktree   = "prefix+shift+o"   # list and open existing worktrees
 # workspaces.
 
 # --- Navigate/goto overlay (already Vim hjkl; kept explicit) ----------------
-navigate_workspace_up   = "up"
+navigate_workspace_up = "up"
 navigate_workspace_down = "down"
-navigate_pane_left      = "h"
-navigate_pane_down      = "j"
-navigate_pane_up        = "k"
-navigate_pane_right     = "l"
+navigate_pane_left = "h"
+navigate_pane_down = "j"
+navigate_pane_up = "k"
+navigate_pane_right = "l"
 
 # ============================================================================
 # Custom command bindings
