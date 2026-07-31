@@ -19,19 +19,22 @@ placement="${1:-tab}"
 title="lazygit"
 
 case "$placement" in
-  tab) entrypoint="lazygit" ;;
-  popup) entrypoint="lazygit-popup" ;;
-  *) printf 'lazygit: unknown placement %q\n' "$placement" >&2; exit 2 ;;
+tab) entrypoint="lazygit" ;;
+popup) entrypoint="lazygit-popup" ;;
+*)
+	printf 'lazygit: unknown placement %q\n' "$placement" >&2
+	exit 2
+	;;
 esac
 
 # Safe to place in an argv iff non-empty, not starting with '-', and only
 # [A-Za-z0-9_:.-] (herdr ids look like wE:pD).
 is_flag_safe() {
-  case "$1" in
-    "" | -*) return 1 ;;
-    *[!A-Za-z0-9_:.-]*) return 1 ;;
-    *) return 0 ;;
-  esac
+	case "$1" in
+	"" | -*) return 1 ;;
+	*[!A-Za-z0-9_:.-]*) return 1 ;;
+	*) return 0 ;;
+	esac
 }
 
 # --- gather state -----------------------------------------------------------
@@ -42,11 +45,11 @@ focused_workspace="$(printf '%s' "$cur" | jq -r '.result.pane.workspace_id // em
 repo="$(printf '%s' "$cur" | jq -r '.result.pane.foreground_cwd // .result.pane.cwd // empty' 2>/dev/null || true)"
 
 if [ "$placement" = "popup" ]; then
-  exec "$herdr_bin" plugin pane open \
-    --plugin lazygit \
-    --entrypoint "$entrypoint" \
-    --focus \
-    --env "HERDR_LAZYGIT_REPO=$repo"
+	exec "$herdr_bin" plugin pane open \
+		--plugin lazygit \
+		--entrypoint "$entrypoint" \
+		--focus \
+		--env "HERDR_LAZYGIT_REPO=$repo"
 fi
 
 panes="$("$herdr_bin" pane list 2>/dev/null || true)"
@@ -54,45 +57,45 @@ panes="$("$herdr_bin" pane list 2>/dev/null || true)"
 # pane_id of the lazygit pane in the focused tab, if any.
 here_id=""
 if [ -n "$focused_tab" ] && [ -n "$panes" ]; then
-  here_id="$(printf '%s' "$panes" \
-    | jq -r --arg t "$title" --arg tab "$focused_tab" \
-      'first(.result.panes[] | select(.label == $t and .tab_id == $tab) | .pane_id) // empty' \
-    2>/dev/null || true)"
+	here_id="$(printf '%s' "$panes" |
+		jq -r --arg t "$title" --arg tab "$focused_tab" \
+			'first(.result.panes[] | select(.label == $t and .tab_id == $tab) | .pane_id) // empty' \
+			2>/dev/null || true)"
 fi
 
 # --- open helper ------------------------------------------------------------
 open_pane() {
-  exec "$herdr_bin" plugin pane open \
-    --plugin lazygit \
-    --entrypoint "$entrypoint" \
-    --placement tab \
-    --focus \
-    --env "HERDR_LAZYGIT_REPO=$repo"
+	exec "$herdr_bin" plugin pane open \
+		--plugin lazygit \
+		--entrypoint "$entrypoint" \
+		--placement tab \
+		--focus \
+		--env "HERDR_LAZYGIT_REPO=$repo"
 }
 
 focus_pane() { # $1 = pane id (validated)
-  "$herdr_bin" pane zoom "$1" --on >/dev/null 2>&1 || true
-  exec "$herdr_bin" pane zoom "$1" --off
+	"$herdr_bin" pane zoom "$1" --on >/dev/null 2>&1 || true
+	exec "$herdr_bin" pane zoom "$1" --off
 }
 
 # --- decide -----------------------------------------------------------------
 # The lazygit pane is in the current tab: toggle off if focused, else focus it.
 if [ -n "$here_id" ] && is_flag_safe "$here_id"; then
-  if [ "$here_id" = "$focused_pane" ]; then
-    exec "$herdr_bin" pane close "$here_id"
-  fi
-  focus_pane "$here_id"
+	if [ "$here_id" = "$focused_pane" ]; then
+		exec "$herdr_bin" pane close "$here_id"
+	fi
+	focus_pane "$here_id"
 fi
 
 # A lazygit pane living in another tab in this workspace -> switch to it.
 if [ -n "$focused_workspace" ] && [ -n "$panes" ]; then
-  other_tab="$(printf '%s' "$panes" \
-    | jq -r --arg t "$title" --arg workspace "$focused_workspace" \
-      'first(.result.panes[] | select(.label == $t and .workspace_id == $workspace) | .tab_id) // empty' \
-    2>/dev/null || true)"
-  if [ -n "$other_tab" ] && is_flag_safe "$other_tab"; then
-    exec "$herdr_bin" tab focus "$other_tab"
-  fi
+	other_tab="$(printf '%s' "$panes" |
+		jq -r --arg t "$title" --arg workspace "$focused_workspace" \
+			'first(.result.panes[] | select(.label == $t and .workspace_id == $workspace) | .tab_id) // empty' \
+			2>/dev/null || true)"
+	if [ -n "$other_tab" ] && is_flag_safe "$other_tab"; then
+		exec "$herdr_bin" tab focus "$other_tab"
+	fi
 fi
 
 # Nothing matching -> open fresh in a new tab.

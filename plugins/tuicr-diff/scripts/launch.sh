@@ -27,14 +27,26 @@ placement="${2:?placement required (split|tab|popup)}"
 herdr_bin="${HERDR_BIN_PATH:-herdr}"
 
 case "$placement" in
-  split | tab | popup) ;;
-  *) printf 'tuicr-diff: unknown placement %q\n' "$placement" >&2; exit 2 ;;
+split | tab | popup) ;;
+*)
+	printf 'tuicr-diff: unknown placement %q\n' "$placement" >&2
+	exit 2
+	;;
 esac
 
 case "$spec" in
-  working) entrypoint="diff-working"; title="Diff: working" ;;
-  branch)  entrypoint="diff-branch";  title="Diff: branch"  ;;
-  *) printf 'tuicr-diff: unknown spec %q\n' "$spec" >&2; exit 2 ;;
+working)
+	entrypoint="diff-working"
+	title="Diff: working"
+	;;
+branch)
+	entrypoint="diff-branch"
+	title="Diff: branch"
+	;;
+*)
+	printf 'tuicr-diff: unknown spec %q\n' "$spec" >&2
+	exit 2
+	;;
 esac
 
 [ "$placement" = "popup" ] && entrypoint="${entrypoint}-popup"
@@ -42,11 +54,11 @@ esac
 # Safe to place in an argv iff non-empty, not starting with '-', and only
 # [A-Za-z0-9_:.-] (herdr ids look like wE:pD).
 is_flag_safe() {
-  case "$1" in
-    "" | -*) return 1 ;;
-    *[!A-Za-z0-9_:.-]*) return 1 ;;
-    *) return 0 ;;
-  esac
+	case "$1" in
+	"" | -*) return 1 ;;
+	*[!A-Za-z0-9_:.-]*) return 1 ;;
+	*) return 0 ;;
+	esac
 }
 
 # --- gather state -----------------------------------------------------------
@@ -60,53 +72,53 @@ panes="$("$herdr_bin" pane list 2>/dev/null || true)"
 # pane_id of a matching diff pane in the focused tab, if any.
 here_id=""
 if [ -n "$focused_tab" ] && [ -n "$panes" ]; then
-  here_id="$(printf '%s' "$panes" \
-    | jq -r --arg t "$title" --arg tab "$focused_tab" \
-      'first(.result.panes[] | select(.label == $t and .tab_id == $tab) | .pane_id) // empty' \
-    2>/dev/null || true)"
+	here_id="$(printf '%s' "$panes" |
+		jq -r --arg t "$title" --arg tab "$focused_tab" \
+			'first(.result.panes[] | select(.label == $t and .tab_id == $tab) | .pane_id) // empty' \
+			2>/dev/null || true)"
 fi
 
 # --- open helpers -----------------------------------------------------------
 open_pane() {
-  local -a cmd=(
-    "$herdr_bin" plugin pane open
-    --plugin tuicr-diff
-    --entrypoint "$entrypoint"
-    --focus
-    --env "HERDR_DIFF_REPO=$repo"
-  )
-  [ "$placement" != "popup" ] && cmd+=(--placement "$placement")
-  [ "$placement" = "split" ] && cmd+=(--direction right)
-  # Forward an explicit base override into the fresh pane env, if set.
-  [ -n "${HERDR_DIFF_BASE:-}" ] && cmd+=(--env "HERDR_DIFF_BASE=$HERDR_DIFF_BASE")
-  exec "${cmd[@]}"
+	local -a cmd=(
+		"$herdr_bin" plugin pane open
+		--plugin tuicr-diff
+		--entrypoint "$entrypoint"
+		--focus
+		--env "HERDR_DIFF_REPO=$repo"
+	)
+	[ "$placement" != "popup" ] && cmd+=(--placement "$placement")
+	[ "$placement" = "split" ] && cmd+=(--direction right)
+	# Forward an explicit base override into the fresh pane env, if set.
+	[ -n "${HERDR_DIFF_BASE:-}" ] && cmd+=(--env "HERDR_DIFF_BASE=$HERDR_DIFF_BASE")
+	exec "${cmd[@]}"
 }
 
 [ "$placement" = "popup" ] && open_pane
 
 focus_pane() { # $1 = pane id (validated)
-  "$herdr_bin" pane zoom "$1" --on >/dev/null 2>&1 || true
-  exec "$herdr_bin" pane zoom "$1" --off
+	"$herdr_bin" pane zoom "$1" --on >/dev/null 2>&1 || true
+	exec "$herdr_bin" pane zoom "$1" --off
 }
 
 # --- decide -----------------------------------------------------------------
 # A matching pane in the current tab: toggle off if it's focused, else focus it.
 if [ -n "$here_id" ] && is_flag_safe "$here_id"; then
-  if [ "$here_id" = "$focused_pane" ]; then
-    exec "$herdr_bin" pane close "$here_id"
-  fi
-  focus_pane "$here_id"
+	if [ "$here_id" = "$focused_pane" ]; then
+		exec "$herdr_bin" pane close "$here_id"
+	fi
+	focus_pane "$here_id"
 fi
 
 # Tab variant only: a matching pane living in another tab -> switch to it.
 if [ "$placement" = "tab" ] && [ -n "$panes" ]; then
-  other_tab="$(printf '%s' "$panes" \
-    | jq -r --arg t "$title" \
-      'first(.result.panes[] | select(.label == $t) | .tab_id) // empty' \
-    2>/dev/null || true)"
-  if [ -n "$other_tab" ] && is_flag_safe "$other_tab"; then
-    exec "$herdr_bin" tab focus "$other_tab"
-  fi
+	other_tab="$(printf '%s' "$panes" |
+		jq -r --arg t "$title" \
+			'first(.result.panes[] | select(.label == $t) | .tab_id) // empty' \
+			2>/dev/null || true)"
+	if [ -n "$other_tab" ] && is_flag_safe "$other_tab"; then
+		exec "$herdr_bin" tab focus "$other_tab"
+	fi
 fi
 
 # Nothing matching -> open fresh.
