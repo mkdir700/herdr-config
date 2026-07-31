@@ -11,7 +11,7 @@ id = "tuicr-diff"
 name = "tuicr Diff"
 version = "0.1.0"
 description = "Review git diffs in a herdr split/tab via tuicr (terminal code-review TUI) — working tree vs HEAD, or branch vs its base."
-min_herdr_version = "0.7.0"
+min_herdr_version = "0.7.4"
 platforms = ["linux", "macos"]
 
 # Two pane entrypoints, one per comparison. The title is the pane's label in
@@ -36,9 +36,25 @@ title = "Diff: branch"
 placement = "split"
 command = ["bash", "scripts/tuicr-diff.sh", "branch"]
 
-# Four actions: {working, branch} × {split, tab}. Each shells to the shared
-# idempotent launcher with the comparison and placement. Bind these to keys in
-# ~/.config/herdr/config.toml (suggested binds are in the plugin README).
+# Popup entrypoints do not participate in the split/tab toggle lookup.
+[[panes]]
+id = "diff-working-popup"
+title = "Diff: working"
+placement = "popup"
+width = "90%"
+height = "90%"
+command = ["bash", "scripts/tuicr-diff.sh", "working"]
+
+[[panes]]
+id = "diff-branch-popup"
+title = "Diff: branch"
+placement = "popup"
+width = "90%"
+height = "90%"
+command = ["bash", "scripts/tuicr-diff.sh", "branch"]
+
+# Six actions: {working, branch} × {split, tab, popup}. Split and tab retain
+# the existing idempotent launcher behavior; popups are always transient.
 
 [[actions]]
 id = "working-split"
@@ -63,3 +79,15 @@ id = "branch-tab"
 title = "Diff branch vs base (tab)"
 description = "Review the whole branch (base...HEAD) in its own tab. Base is auto-detected; override with $HERDR_DIFF_BASE."
 command = ["bash", "scripts/launch.sh", "branch", "tab"]
+
+[[actions]]
+id = "working-popup"
+title = "Diff working tree (popup)"
+description = "Review uncommitted changes in a transient modal popup."
+command = ["bash", "scripts/launch.sh", "working", "popup"]
+
+[[actions]]
+id = "branch-popup"
+title = "Diff branch vs base (popup)"
+description = "Review the branch diff in a transient modal popup."
+command = ["bash", "scripts/launch.sh", "branch", "popup"]

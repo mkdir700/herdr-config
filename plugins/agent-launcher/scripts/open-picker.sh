@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Open the agent chooser over the focused pane and retain its working directory.
+# Open the agent chooser as a popup and retain its working directory.
 set -euo pipefail
 
 herdr_bin="${HERDR_BIN_PATH:-herdr}"
@@ -20,6 +20,5 @@ fi
 exec "$herdr_bin" plugin pane open \
 	--plugin agent-launcher \
 	--entrypoint agent-picker \
-	--placement overlay \
 	--focus \
 	--env "HERDR_AGENT_LAUNCHER_CWD=$cwd"

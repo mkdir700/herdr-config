@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Idempotent launcher for tuicr-diff, invoked by the four actions:
+# Launcher for tuicr-diff split/tab toggles and transient popup actions:
 #
 #   launch.sh <spec> <placement>
 #     spec       working | branch    (which diff; encoded in the pane title)
-#     placement  split | tab         (where the pane goes)
+#     placement  split | tab | popup (where the pane goes)
 #
 # "Launch-or-focus, toggle on repeat", scoped per comparison type (the pane title
 # encodes the spec, so `working` and `branch` toggle independently and coexist):
@@ -23,14 +23,21 @@
 set -uo pipefail
 
 spec="${1:?spec required (working|branch)}"
-placement="${2:?placement required (split|tab)}"
+placement="${2:?placement required (split|tab|popup)}"
 herdr_bin="${HERDR_BIN_PATH:-herdr}"
+
+case "$placement" in
+  split | tab | popup) ;;
+  *) printf 'tuicr-diff: unknown placement %q\n' "$placement" >&2; exit 2 ;;
+esac
 
 case "$spec" in
   working) entrypoint="diff-working"; title="Diff: working" ;;
   branch)  entrypoint="diff-branch";  title="Diff: branch"  ;;
   *) printf 'tuicr-diff: unknown spec %q\n' "$spec" >&2; exit 2 ;;
 esac
+
+[ "$placement" = "popup" ] && entrypoint="${entrypoint}-popup"
 
 # Safe to place in an argv iff non-empty, not starting with '-', and only
 # [A-Za-z0-9_:.-] (herdr ids look like wE:pD).
@@ -65,15 +72,17 @@ open_pane() {
     "$herdr_bin" plugin pane open
     --plugin tuicr-diff
     --entrypoint "$entrypoint"
-    --placement "$placement"
     --focus
     --env "HERDR_DIFF_REPO=$repo"
   )
+  [ "$placement" != "popup" ] && cmd+=(--placement "$placement")
   [ "$placement" = "split" ] && cmd+=(--direction right)
   # Forward an explicit base override into the fresh pane env, if set.
   [ -n "${HERDR_DIFF_BASE:-}" ] && cmd+=(--env "HERDR_DIFF_BASE=$HERDR_DIFF_BASE")
   exec "${cmd[@]}"
 }
+
+[ "$placement" = "popup" ] && open_pane
 
 focus_pane() { # $1 = pane id (validated)
   "$herdr_bin" pane zoom "$1" --on >/dev/null 2>&1 || true

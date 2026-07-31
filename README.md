@@ -222,11 +222,12 @@ walks up to the enclosing git repo from there.
 
 ### How it works
 
-One pane entrypoint (`lazygit`, title `lazygit`) and one action (`toggle`). The
-launcher (`scripts/launch.sh`) keys its decision off the pane **label** and
-workspace in `herdr pane list` (so the local instance is found across tabs), and
-ids pulled from the host JSON are validated flag-safe before reaching an argv
-(option-injection guard), mirroring the `tuicr-diff` launcher.
+The tab entrypoint (`lazygit`, title `lazygit`) and `toggle` action retain the
+workspace-local tab behavior. A separate `popup` action opens a transient
+modal instance without participating in tab lookup. The launcher
+(`scripts/launch.sh`) keys tab toggling off the pane **label** and workspace in
+`herdr pane list`, and ids pulled from the host JSON are validated flag-safe
+before reaching an argv (option-injection guard), mirroring `tuicr-diff`.
 
 ### Keybinding (tracked in `config.toml`)
 
@@ -234,10 +235,12 @@ ids pulled from the host JSON are validated flag-safe before reaching an argv
 | --- | ------ |
 | `prefix+v` | toggle lazygit in a tab (open / focus / close) |
 
+Run `herdr plugin action invoke lazygit.popup` for a temporary modal instance.
+
 `v` is the slot freed when `split_vertical` moved to `prefix+plus`; a loose
 mnemonic for version-control. The obvious `g`/`shift+g` were already taken by
 `goto` / `new_worktree`. Requires [`lazygit`](https://github.com/jesseduffield/lazygit)
-and `jq` on `PATH`. Built for Herdr **0.7.0+**.
+and `jq` on `PATH`. Built for Herdr **0.7.4+**.
 
 ## Plugin: agent-launcher
 
@@ -251,7 +254,7 @@ existing agent tab.
 | --- | --- |
 | `prefix+z` | Open the agent picker |
 
-The prefix is `ctrl+b`, so `ctrl+b`, then `z` opens an overlay picker. This
+The prefix is `ctrl+b`, so `ctrl+b`, then `z` opens a modal popup picker. This
 unmodified second key works reliably through Windows WSL terminals.
 Use the arrow keys and Enter to choose Codex, Claude Code, or Pi; press Esc to
 cancel. The chosen agent opens in a new tab rooted at the focused pane's working
@@ -279,7 +282,7 @@ A local guard for the two explicit close shortcuts:
 | `prefix+x` | Close pane. Confirmation is required only when it is the only pane in the workspace's only tab. |
 
 Other tabs or panes close immediately. A protected action captures the original
-target IDs before opening a terminal overlay; only `y` or `yes` closes the
+target IDs before opening a terminal popup; only `y` or `yes` closes the
 workspace, and any other input cancels it.
 
 Herdr plugin v1 has no cancellable pre-close or pre-exit hook, and its sidebar
@@ -310,18 +313,16 @@ While a refresh is in flight the dot is `⟳`.
 
 ### Why a fork (and why a dot, not colored text)
 
-Herdr renders the sidebar `custom_status` as **plain text**: on normalization it
-strips control characters (so ANSI color escapes do not survive) and caps the
-string at 32 chars — there is no markup or per-source color directive. So the PR
-number itself cannot be colored. The only way to convey status by color in the
-sidebar is a glyph that carries its own color, hence the emoji dots. Upstream
-ships monochrome symbols (`✓ ✗ ● ◆ ⊘`); this fork swaps `composeLabel`
-(`src/label.ts`) for the colored dots above. Everything else is unchanged.
+Herdr now renders plugin metadata through named sidebar tokens. This fork writes
+its label to `pr_status`, which the tracked `[ui.sidebar.agents]` rows render as
+`$pr_status`. ANSI color escapes still do not survive normalization, so the PR
+number itself cannot be colored. The status dots carry their own color; upstream
+uses monochrome symbols (`✓ ✗ ● ◆ ⊘`).
 
 Because the change lives in plugin code, the marketplace install is replaced by
 this tracked local plugin. It is picked up automatically by
 `scripts/link-local-plugins.sh`. Requires `bun`, `gh` (authenticated), and `git`
-on `PATH`. Built for Herdr **0.7.0+**.
+on `PATH`. Built for Herdr **0.7.4+**.
 
 ## Installed marketplace plugins
 

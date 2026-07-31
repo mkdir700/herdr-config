@@ -11,11 +11,11 @@ Shows the GitHub PR status of the focused **agent** pane's current git branch as
 
 While the status is being recomputed, the dot is replaced with `⟳`.
 
-> **Local fork** of [`wyattjoh/herdr-plugin-gh-pr`](https://github.com/wyattjoh/herdr-plugin-gh-pr). Upstream uses monochrome symbols (`✓ ✗ ● ◆ ⊘`); this fork swaps them for colored emoji dots, because herdr renders `custom_status` as plain text (ANSI escapes are stripped on normalization), so a self-colored glyph is the only way to convey status by color in the sidebar.
+> **Local fork** of [`wyattjoh/herdr-plugin-gh-pr`](https://github.com/wyattjoh/herdr-plugin-gh-pr). It writes the label to the `pr_status` sidebar metadata token. The tracked Herdr config renders `$pr_status`; ANSI escapes are stripped during normalization, so colored status dots remain the portable way to convey CI state.
 
 ## Requirements
 
-- herdr >= 0.7.0
+- herdr >= 0.7.4
 - `bun`, `git`, and `gh` (authenticated: `gh auth status`) on your PATH
 
 ## Install
@@ -70,5 +70,6 @@ The qualified action id uses a dot (`gh-pr.open-pr`), not a slash.
 
 ## Develop
 
+- `bun run typecheck` checks TypeScript types.
 - `bun test` runs the unit tests.
 - `herdr plugin log list gh-pr` shows hook output.

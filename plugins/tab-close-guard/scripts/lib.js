@@ -170,8 +170,6 @@ function openConfirmation({ workspaceId, tabId, paneId, kind }) {
 		"tab-close-guard",
 		"--entrypoint",
 		"confirm",
-		"--placement",
-		"overlay",
 		"--focus",
 		"--env",
 		`HERDR_TAB_CLOSE_GUARD_WORKSPACE_ID=${workspaceId}`,

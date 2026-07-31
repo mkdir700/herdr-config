@@ -5,7 +5,7 @@ id = "tab-close-guard"
 name = "Tab Close Guard"
 version = "0.1.0"
 description = "Confirm before closing the final tab or final pane in a workspace."
-min_herdr_version = "0.7.0"
+min_herdr_version = "0.7.4"
 platforms = ["linux", "macos"]
 
 [[actions]]
@@ -25,5 +25,7 @@ command = ["node", "scripts/close-pane.js"]
 [[panes]]
 id = "confirm"
 title = "Close final tab?"
-placement = "overlay"
+placement = "popup"
+width = "68%"
+height = 16
 command = ["node", "scripts/confirm.js"]

@@ -10,6 +10,7 @@ import {
 import { lastCheckMs, recordCheck, THROTTLE_WINDOW_MS, throttleElapsed } from "./throttle";
 
 const SOURCE = "gh-pr";
+const herdr = process.env.HERDR_BIN_PATH ?? "herdr";
 
 interface PaneCurrent {
   result?: {
@@ -17,7 +18,7 @@ interface PaneCurrent {
       pane_id?: string;
       cwd?: string;
       foreground_cwd?: string;
-      custom_status?: string;
+      tokens?: Record<string, string>;
     };
   };
 }
@@ -25,7 +26,7 @@ interface PaneCurrent {
 interface Pane {
   paneId: string;
   cwd: string;
-  currentStatus?: string;
+  currentPrStatus?: string;
 }
 
 interface PullRequest {
@@ -52,7 +53,7 @@ async function resolvePane(targetPaneId?: string): Promise<Pane | null> {
   const paneId = pane?.pane_id;
   const cwd = pane?.foreground_cwd ?? pane?.cwd;
   if (!paneId || !cwd) return null;
-  return { paneId, cwd, currentStatus: pane?.custom_status };
+  return { paneId, cwd, currentPrStatus: pane?.tokens?.pr_status };
 }
 
 // Current branch name, or null if the dir is not a git work tree or is detached.
@@ -92,12 +93,19 @@ async function prChecks(cwd: string, branch: string): Promise<Check[]> {
   }
 }
 
+async function reportMetadata(args: string[]): Promise<void> {
+  const result = await $`${herdr} pane report-metadata ${args}`.nothrow().quiet();
+  if (result.exitCode !== 0) {
+    throw new Error(result.stderr.toString().trim() || "failed to update PR status metadata");
+  }
+}
+
 async function setLabel(paneId: string, text: string): Promise<void> {
-  await $`herdr pane report-metadata ${paneId} --source ${SOURCE} --custom-status ${text}`.nothrow().quiet();
+  await reportMetadata([paneId, "--source", SOURCE, "--token", `pr_status=${text}`]);
 }
 
 async function clearLabel(paneId: string): Promise<void> {
-  await $`herdr pane report-metadata ${paneId} --source ${SOURCE} --clear-custom-status`.nothrow().quiet();
+  await reportMetadata([paneId, "--source", SOURCE, "--clear-token", "pr_status"]);
 }
 
 export async function run(targetPaneId?: string, force = false): Promise<void> {
@@ -119,7 +127,7 @@ export async function run(targetPaneId?: string, force = false): Promise<void> {
 
   // If the pane already shows a PR number, swap its icon for the refreshing
   // glyph while the (slower) gh queries run, so the update is visible.
-  const previous = parsePrNumber(pane.currentStatus);
+  const previous = parsePrNumber(pane.currentPrStatus);
   if (previous !== null) {
     await setLabel(pane.paneId, refreshingLabel(previous));
   }

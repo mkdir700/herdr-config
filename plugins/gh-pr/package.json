@@ -5,6 +5,11 @@
   "type": "module",
   "description": "herdr plugin that shows the focused agent pane's branch PR status in the sidebar",
   "scripts": {
-    "test": "bun test"
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "bun-types": "^1.3.14",
+    "typescript": "^7.0.2"
   }
 }

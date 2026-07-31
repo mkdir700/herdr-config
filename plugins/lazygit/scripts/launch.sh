@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Idempotent launcher for the lazygit plugin, invoked by the "toggle" action.
+# Launcher for the lazygit tab toggle and transient popup actions.
 #
 # One instance per workspace in its own tab — "open-or-focus, toggle off when already on it":
 #
@@ -15,8 +15,14 @@
 set -uo pipefail
 
 herdr_bin="${HERDR_BIN_PATH:-herdr}"
-entrypoint="lazygit"
+placement="${1:-tab}"
 title="lazygit"
+
+case "$placement" in
+  tab) entrypoint="lazygit" ;;
+  popup) entrypoint="lazygit-popup" ;;
+  *) printf 'lazygit: unknown placement %q\n' "$placement" >&2; exit 2 ;;
+esac
 
 # Safe to place in an argv iff non-empty, not starting with '-', and only
 # [A-Za-z0-9_:.-] (herdr ids look like wE:pD).
@@ -34,6 +40,14 @@ focused_pane="$(printf '%s' "$cur" | jq -r '.result.pane.pane_id // empty' 2>/de
 focused_tab="$(printf '%s' "$cur" | jq -r '.result.pane.tab_id // empty' 2>/dev/null || true)"
 focused_workspace="$(printf '%s' "$cur" | jq -r '.result.pane.workspace_id // empty' 2>/dev/null || true)"
 repo="$(printf '%s' "$cur" | jq -r '.result.pane.foreground_cwd // .result.pane.cwd // empty' 2>/dev/null || true)"
+
+if [ "$placement" = "popup" ]; then
+  exec "$herdr_bin" plugin pane open \
+    --plugin lazygit \
+    --entrypoint "$entrypoint" \
+    --focus \
+    --env "HERDR_LAZYGIT_REPO=$repo"
+fi
 
 panes="$("$herdr_bin" pane list 2>/dev/null || true)"
 

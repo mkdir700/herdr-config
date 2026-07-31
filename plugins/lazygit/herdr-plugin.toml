@@ -13,12 +13,12 @@
 id = "lazygit"
 name = "lazygit"
 version = "0.1.0"
-description = "Open lazygit (terminal git UI) in a workspace-local herdr tab — idempotent toggle: open / focus / close."
-min_herdr_version = "0.7.0"
+description = "Open lazygit in a workspace-local tab or a transient popup."
+min_herdr_version = "0.7.4"
 platforms = ["linux", "macos"]
 
-# Single pane entrypoint. The title is the pane's label in `herdr pane list`,
-# and the launcher keys its idempotent toggle off it.
+# The tab entrypoint is the pane label that the launcher uses for its
+# workspace-local idempotent toggle.
 #
 # The pane command is a path relative to the plugin root (the new pane's default
 # cwd), so the launcher passes the repo to open via `--env HERDR_LAZYGIT_REPO`
@@ -29,10 +29,24 @@ title = "lazygit"
 placement = "tab"
 command = ["bash", "scripts/lazygit.sh"]
 
-# One action: idempotent open/focus/close in a tab. Bind it to a key in
-# ~/.config/herdr/config.toml (suggested bind is in the plugin README).
+# The popup entrypoint is intentionally separate: popups are session-modal and
+# do not participate in the tab toggle's pane lookup.
+[[panes]]
+id = "lazygit-popup"
+title = "lazygit"
+placement = "popup"
+width = "90%"
+height = "90%"
+command = ["bash", "scripts/lazygit.sh"]
+
 [[actions]]
 id = "toggle"
 title = "lazygit (tab)"
 description = "Open lazygit in its own tab; focus it if it exists in this workspace; close it if already focused."
-command = ["bash", "scripts/launch.sh"]
+command = ["bash", "scripts/launch.sh", "tab"]
+
+[[actions]]
+id = "popup"
+title = "lazygit (popup)"
+description = "Open a transient modal lazygit session without changing the tab layout."
+command = ["bash", "scripts/launch.sh", "popup"]
