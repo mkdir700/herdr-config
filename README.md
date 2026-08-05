@@ -216,9 +216,10 @@ A workspace-local lazygit instance lives in its own tab. The bound key
 | Already on this workspace's lazygit tab | close it (toggle off) |
 
 The viewer is **transient**: quitting lazygit (`q`) exits the process, so the tab
-disappears with it. lazygit runs in the focused pane's repo — the launcher hands
-the focused pane's cwd to the new pane via `--env HERDR_LAZYGIT_REPO`, and lazygit
-walks up to the enclosing git repo from there.
+disappears with it and focus returns to the tab that opened it. lazygit runs in
+the focused pane's repo — the launcher hands the focused pane's cwd to the new
+pane via `--env HERDR_LAZYGIT_REPO`, and lazygit walks up to the enclosing git
+repo from there.
 
 ### How it works
 

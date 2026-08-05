@@ -65,12 +65,18 @@ fi
 
 # --- open helper ------------------------------------------------------------
 open_pane() {
+	local return_tab=""
+	if is_flag_safe "$focused_tab"; then
+		return_tab="$focused_tab"
+	fi
+
 	exec "$herdr_bin" plugin pane open \
 		--plugin lazygit \
 		--entrypoint "$entrypoint" \
 		--placement tab \
 		--focus \
-		--env "HERDR_LAZYGIT_REPO=$repo"
+		--env "HERDR_LAZYGIT_REPO=$repo" \
+		--env "HERDR_LAZYGIT_RETURN_TAB=$return_tab"
 }
 
 focus_pane() { # $1 = pane id (validated)
